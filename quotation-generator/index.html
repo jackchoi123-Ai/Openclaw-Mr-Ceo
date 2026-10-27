@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>报价生成器 Quotation Generator</title>
+<style>
+:root{--bg:#eef0f5;--panel:#fff;--ink:#1d2433;--muted:#667085;--line:#d9dde6;--brand:#1f3864;--accent:#2f6fd6;--danger:#c0392b;--soft:#f6f8fc}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",Arial,sans-serif}
+button{font:inherit;cursor:pointer}
+.topbar{position:sticky;top:0;z-index:20;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--brand);color:#fff}
+.topbar h1{font-size:16px;margin:0 12px 0 0;font-weight:600}
+.topbar button{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;padding:6px 12px;border-radius:6px}
+.topbar button:hover{background:rgba(255,255,255,.14)}
+.topbar button.primary{background:#fff;color:var(--brand);font-weight:600;border-color:#fff}
+.topbar .grow{flex:1}
+.topbar .total{font-weight:600;font-size:15px}
+.app{display:grid;grid-template-columns:minmax(520px,1.05fr) minmax(0,1fr);gap:16px;padding:16px;align-items:start}
+@media(max-width:1100px){.app{grid-template-columns:1fr}}
+.editor{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card>h2{font-size:14px;margin:0 0 10px;color:var(--brand)}
+details.card>summary{cursor:pointer;font-weight:600;color:var(--brand);font-size:14px}
+details.card[open]>summary{margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:12px;color:var(--muted)}
+label>input,label>textarea,label>select{display:block;width:100%;margin-top:2px}
+input,textarea,select{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+input:focus,textarea:focus,select:focus{outline:2px solid #b9d0f7;border-color:var(--accent)}
+textarea{resize:vertical}
+.sec{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:10px;margin-bottom:10px}
+.sechead{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;margin-bottom:6px}
+.secno{font-weight:700;color:var(--brand);text-align:center}
+.sec textarea{width:100%;margin-bottom:6px;min-height:44px}
+.rows{overflow-x:auto}
+.row{display:grid;grid-template-columns:70px minmax(180px,1fr) 78px 66px 58px 80px 84px 92px;gap:4px;align-items:center;margin-bottom:4px;min-width:700px}
+.row.text{grid-template-columns:70px minmax(180px,1fr) 84px 92px}
+.row.colhead{font-size:11px;color:var(--muted);margin-bottom:2px}
+.row select{padding:5px 2px;font-size:12px}
+.row input{width:100%}
+.row .amt{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--ink);padding-right:4px}
+.row.text.subtotal input{font-weight:600}
+.row.text.heading input{font-weight:600}
+.row.text.note input{font-style:italic}
+.ops{display:flex;gap:2px}
+.ops button,.mini{border:1px solid var(--line);background:#fff;border-radius:5px;padding:2px 6px;font-size:12px;line-height:1.4}
+.ops button:hover,.mini:hover{background:#eef3fc}
+.ops .del,.mini.danger{color:var(--danger)}
+.addbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.addbar button{border:1px dashed var(--accent);color:var(--accent);background:#fff;border-radius:6px;padding:4px 10px;font-size:12px}
+.addbar button:hover{background:#eef3fc}
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:8px 14px}
+.btn.ghost{background:#fff;color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0}
+.preview-wrap{position:sticky;top:58px;max-height:calc(100vh - 74px);overflow:auto;border-radius:10px;background:#cfd4de;padding:14px}
+.sheet{width:210mm;max-width:none;margin:0 auto;background:#fff;color:#000;padding:12mm 10mm;font:9.5pt/1.35 Arial,Helvetica,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.2);zoom:var(--zoom,.8)}
+.sheet h1{font-size:13pt;margin:0}
+.sheet .co{text-align:left;margin-bottom:6px}
+.sheet .co div{font-size:9pt}
+.sheet .meta{display:flex;justify-content:space-between;gap:12px;margin:10px 0 8px}
+.sheet .meta .to{white-space:pre-line;font-size:9.5pt}
+.sheet .meta table{border-collapse:collapse}
+.sheet .meta td{padding:0 0 0 8px;vertical-align:top;font-size:9.5pt}
+.sheet .proj{font-weight:700;margin:6px 0 8px;font-size:9.5pt;text-transform:uppercase}
+table.q{width:100%;border-collapse:collapse;table-layout:fixed}
+table.q th{background:#1f3864;color:#fff;font-size:8.5pt;padding:4px 4px;text-align:left;border:1px solid #1f3864}
+table.q th.r,table.q td.r{text-align:right}
+table.q td{padding:2px 4px;vertical-align:top;font-size:9pt;border-left:1px solid #bbb;border-right:1px solid #bbb}
+table.q tr{break-inside:avoid;page-break-inside:avoid}
+table.q thead{display:table-header-group}
+table.q tr.sh td{background:#e6ecf7;font-weight:700;border-top:1px solid #888;padding-top:4px;padding-bottom:3px}
+table.q tr.secdesc td{font-size:8.5pt;color:#333;white-space:pre-line}
+table.q tr.heading td{font-weight:700;padding-top:6px}
+table.q tr.note td{font-style:italic;color:#333}
+table.q tr.subtotal td{font-weight:700;border-top:1px solid #777}
+table.q tr.sectotal td{font-weight:700;border-top:1.5px solid #000;border-bottom:1px solid #000;background:#f3f5fa}
+table.q td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sheet .sum{margin-top:14px;break-inside:avoid;page-break-inside:avoid}
+.sheet .sum table{width:100%;border-collapse:collapse}
+.sheet .sum td{padding:2px 6px;font-size:9.5pt}
+.sheet .sum td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sheet .sum tr.b td{font-weight:700;border-top:1px solid #000}
+.sheet .sum tr.grand td{font-weight:700;font-size:11pt;border-top:2px solid #000;border-bottom:2px solid #000;background:#f3f5fa}
+.sheet .terms{margin-top:14px;font-size:8.5pt;break-inside:avoid-page}
+.sheet .terms h3{font-size:9.5pt;margin:0 0 4px}
+.sheet .terms p{margin:0 0 3px;padding-left:12px;text-indent:-12px}
+.sheet .payee{margin-top:8px;font-size:9pt;font-weight:700}
+.sheet .end{break-inside:avoid;page-break-inside:avoid}
+.sheet .sign{margin-top:14px;display:flex;justify-content:flex-end}
+.sheet .sign div{width:230px;font-size:9.5pt}
+.sheet .sign .line{border-bottom:1px solid #000;height:34px;margin-bottom:4px}
+.sheet .foot{margin-top:10px;font-size:8pt;color:#444;text-align:center}
+dialog{border:1px solid var(--line);border-radius:12px;padding:16px;width:min(760px,94vw);max-height:86vh}
+dialog::backdrop{background:rgba(20,28,45,.45)}
+dialog h3{margin:0 0 10px;color:var(--brand)}
+dialog table{width:100%;border-collapse:collapse;font-size:13px}
+dialog th,dialog td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:middle}
+dialog td input{width:100%}
+dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#1d2433;color:#fff;padding:8px 14px;border-radius:8px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media print{
+  html,body{background:#fff}
+  .topbar,.editor,.toast,dialog{display:none!important}
+  .app{display:block;padding:0}
+  .preview-wrap{position:static;max-height:none;overflow:visible;background:#fff;padding:0;border-radius:0}
+  .sheet{zoom:1;width:auto;margin:0;padding:0;box-shadow:none}
+  @page{size:A4;margin:12mm 10mm 14mm;@bottom-right{content:"Page " counter(page) " / " counter(pages);font:8pt Arial}}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>报价生成器</h1>
+  <button id="bNew">新建</button>
+  <button id="bSample">载入范例 Q10357</button>
+  <button id="bSave">保存</button>
+  <button id="bDrafts">已保存的报价</button>
+  <button id="bCatalog">价目表</button>
+  <button id="bExport">导出文件</button>
+  <button id="bImport">导入文件</button>
+  <span class="grow"></span>
+  <span class="total" id="topTotal"></span>
+  <button class="primary" id="bPdf">导出 PDF</button>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div class="app">
+  <div class="editor" id="editor">
+    <div class="card">
+      <h2>① 报价资料</h2>
+      <div class="grid">
+        <label>报价单号 Quotation No<input data-bind="meta.no"></label>
+        <label>版本 Quote No<input data-bind="meta.quoteNo"></label>
+        <label>参考号 Reference No<input data-bind="meta.ref"></label>
+        <label>日期 Date<input type="date" data-bind="meta.date"></label>
+        <label>付款条件 Term<input data-bind="meta.term"></label>
+        <label>有效期至 Valid until<input type="date" data-bind="meta.validUntil"></label>
+        <label class="full">工程名称 Project<input data-bind="project"></label>
+        <label>客户名称 Client<input data-bind="client.name" placeholder="例如：Mr Brandon"></label>
+        <label>联络人 Attn<input data-bind="client.attn"></label>
+        <label class="full">客户地址 Address（每行一句）<textarea rows="3" data-bind="client.addr"></textarea></label>
+        <label>电话 Contact<input data-bind="client.contact"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>② 工程项目</h2>
+      <p class="hint" style="margin:0 0 8px">每个项目＝报价单里的一个大项（如 Plumbing Work）。行类型：<b>项目</b> 有数量×单价；<b>小标题</b>（如 Ground Floor）；<b>备注</b>；<b>小计</b> 会加总上一个小计之后的所有项目。项目描述可从价目表自动带出单位和单价。</p>
+      <div id="sections"></div>
+      <button class="btn ghost" id="addSection">＋ 新增工程项目</button>
+    </div>
+
+    <div class="card">
+      <h2>③ 费用</h2>
+      <div class="grid">
+        <label><span><input type="checkbox" data-bind="supervisor.on" style="display:inline;width:auto;margin:0 6px 0 0">收监工费 Supervisor Fee</span></label>
+        <label>监工费比例 %<input type="number" step="any" data-bind="supervisor.rate"></label>
+        <label>折扣 Discount (RM)<input type="number" step="any" data-bind="discount"></label>
+        <label><span><input type="checkbox" data-bind="sst.on" style="display:inline;width:auto;margin:0 6px 0 0">加 SST</span></label>
+        <label>SST 税率 %<input type="number" step="any" data-bind="sst.rate"></label>
+      </div>
+      <p class="hint">监工费 = 各项小计总和 × 比例（你的 Q10357 是 2.5%）。SST 只在勾选时加；不勾选时条款里会写 "excluded"。</p>
+    </div>
+
+    <div class="card">
+      <h2>④ 条款、公司资料</h2>
+      <label>条款 Terms（每行一条；可用 {{validUntil}} 自动带入有效期）<textarea rows="12" data-bind="termsText"></textarea></label>
+      <label style="margin-top:8px">支票抬头 Payee<input data-bind="payee"></label>
+    </div>
+
+    <details class="card">
+      <summary>公司资料（一般不用改）</summary>
+      <div class="grid">
+        <label class="full">公司名称<input data-bind="company.name"></label>
+        <label>公司注册号<input data-bind="company.reg"></label>
+        <label>电话<input data-bind="company.tel"></label>
+        <label class="full">地址（每行一句）<textarea rows="3" data-bind="company.addr"></textarea></label>
+        <label class="full">页尾（如注册号）<input data-bind="company.foot"></label>
+      </div>
+    </details>
+  </div>
+
+  <div class="preview-wrap"><div class="sheet" id="sheet"></div></div>
+</div>
+
+<dialog id="dlgDrafts"><h3>已保存的报价</h3><div id="draftList"></div><div class="actions"><button class="btn ghost" onclick="this.closest('dialog').close()">关闭</button></div></dialog>
+<dialog id="dlgCatalog"><h3>价目表（输入描述时自动带出单位和单价）</h3><div style="max-height:56vh;overflow:auto"><table><thead><tr><th>描述</th><th style="width:70px">单位</th><th style="width:90px">单价</th><th style="width:34px"></th></tr></thead><tbody id="catBody"></tbody></table></div>
+<div class="actions"><button class="btn ghost" id="catAdd">＋ 新增一行</button><button class="btn ghost" id="catFromQuote">从当前报价补充</button><button class="btn" id="catClose">完成</button></div></dialog>
+<div class="toast" id="toast"></div>
+<datalist id="catalogList"></datalist>
+
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const r2=n=>Math.round((n+Number.EPSILON)*100)/100;
+const fmt=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtQ=q=>(q===''||q==null||isNaN(+q))?'':Number(q).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>new Date().toISOString().slice(0,10);
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const fmtDate=iso=>{if(!iso)return '';const[y,m,d]=iso.split('-');return `${d}/${m}/${y}`};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+const getP=(o,p)=>p.split('.').reduce((a,k)=>a?.[k],o);
+const setP=(o,p,v)=>{const ks=p.split('.');const l=ks.pop();ks.reduce((a,k)=>a[k],o)[l]=v};
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2200)}
+
+/* ---------- row builders ---------- */
+const I=(desc,qty,unit,price,ref='')=>({type:'item',desc,ref,qty:String(qty),unit,price:String(price)});
+const H=t=>({type:'heading',desc:t,ref:'',qty:'',unit:'',price:''});
+const N=t=>({type:'note',desc:t,ref:'',qty:'',unit:'',price:''});
+const S=t=>({type:'subtotal',desc:t||'Sub - Total',ref:'',qty:'',unit:'',price:''});
+const BL=desc=>({type:'item',desc,ref:'',qty:'',unit:'',price:''});
+
+const DEFAULT_TERMS=`* All Quote Item was not a fix Price.
+GST / SST Is excluded of Quotation/invoice.
+Validity Period: The validity period of this quotation is until {{validUntil}}. After this date, the quotation will automatically expire.
+Price and Payment Terms: The prices quoted are based on current costs and conditions and are subject to change due to factors such as brand changes, quantity, and government tax adjustments. Specific prices will be confirmed upon acceptance of the order. Payment is due within 30 days of accepting the quotation.
+Warranty: We guarantee that the products supplied meet relevant standards under normal use conditions. All the Accessories was under 12 month Warranty which covered by company. Workmanship item only with 3 month after every single item hand over. During the warranty period, we will be responsible for repairing or replacing any defects arising from manufacturing.
+Limitation of Liability: We shall not be liable for any indirect, special, incidental, or consequential losses or damages arising from or in connection with the use of our products, whether in contract, negligence, or other factors. Our liability is limited to the price of the products.
+Cancellation and Changes: Orders once confirmed cannot be cancelled or changed unless mutually agreed upon in writing.
+Intellectual Property: Any intellectual property mentioned in this quotation belongs to us. The customer shall not use, copy, or distribute such intellectual property without our written permission.
+Dispute Resolution: Any disputes arising from or related to this quotation, order, or supplied products shall be resolved amicably through negotiation to the extent possible. If negotiation fails, both parties agree to submit the dispute to arbitration resolution and accept the final decision of that institution.
+Compliance: The customer shall ensure that their use of our products complies with all applicable laws, regulations, and standards.`;
+
+function newQuote(bump=true){
+  let c=store.get('qg_counter',10357)+1; if(bump)store.set('qg_counter',c);
+  const d=today();
+  return {
+    company:store.get('qg_company',null)||{name:'SIMBAPLUS ENGINEERING ( M ) SDN BHD',reg:'( 338640 - V )',addr:'B-06-11 , Perdana Selatan , Taman Serdang Perdana ( Seksyen 1 )\n43300 Seri Kembangan , Selangor Darul Ehsan',tel:'Tel : +6 03 89599193 / HP Tel : +6 011 6270 7420',foot:'NO PENDAFTARAN : 1960807-SL003724'},
+    meta:{no:'Q'+c,quoteNo:'Quote - 1',ref:'',date:d,term:'C.O.D',validUntil:addDays(d,30)},
+    client:{name:'',attn:'',addr:'',contact:''},
+    project:'',
+    sections:[],
+    supervisor:{on:true,rate:'2.5'},discount:'',sst:{on:false,rate:'8'},
+    termsText:DEFAULT_TERMS,
+    payee:'All Cheque must be made payable to SIMBAPLUS ENGINEERING ( M ) SDN BHD'
+  };
+}
+
+/* ---------- sample: Q10357 ---------- */
+function sampleQuote(){
+  const q=newQuote(false);
+  q.meta.no='Q10357';q.meta.date='';q.meta.validUntil='';
+  q.client={name:'Mr Brandon',attn:'Mr Brandon',contact:'+60 12-506 6909',addr:'23, Jalan Sri Tasik Barat 1B,\nSummerglades,\nPerdana Lakeview West\n63000 Cyber 7 , Cyberjaya'};
+  q.project='EXTENTION & RENOVATION FOR EXISTING BANGLO UNIT HOUSE @AMVERTON PARK';
+  const cs=[];
+  cs.push({title:'Preliminaries Work',desc:'To Supply Labour & Material dismantle selected area , Refer to Drawing :',rows:[
+    I('Labour , 4 General Worker - RM1000/day x 20 Working Days',20,'days',1000),
+    I('Roro Bin - 10 Unit x RM300/Load',10,'trip',300)]});
+  cs.push({title:'Builder Work',desc:'Build and extention work for selected area , with 150mm wall thickness , RC concreted slab , Basic Plywood Door , Basic Pvc Piping , Floor Leveling fullfill with soil,sand, mix crusher run , ( Internal Furnishing was not included ) , Exsiting Roof was not replacement',rows:[
+    H('Ground Floor'),H('~ Floor Based Structure ~'),
+    I('Ext - Platform - A (4.4m x 9.8m)',43.12,'m2',650),
+    I('Releveling Carporch Area (3.6m x 4.5m)',16.2,'m2',320),
+    H('~ Wall Structure ~'),
+    I('Ext - A (4.4m x 3.6m)',15.84,'m2',550),I('Ext - B (9.8m x 3.6m)',35.28,'m2',550),I('Ext - C (4.4m x 3.6m)',15.84,'m2',550),
+    H('~ Underground ~'),
+    I('Sewerage Point',1,'unit',3500),I('Drainage',26,'mtr',260),S('Sub - Total (Ground Floor)'),
+    H('First Floor'),H('~ Floor Based Structure ~'),
+    I('Ext - Platform - A (4.4m x 9.8m)',43.12,'m2',650),
+    H('~ Wall Structure ~'),
+    I('Ext - A (4.4m x 3.6m)',15.84,'m2',550),I('Ext - B (9.8m x 3.6m)',35.28,'m2',550),I('Ext - C (4.4m x 3.6m)',15.84,'m2',550),I('Ext - D (9.8m x 3.6m)',35.28,'m2',550),
+    H('~ RC Slap Structure ~'),
+    I('Ext - Platform - A (4.4m x 9.8m)',43.12,'m2',650),S('Sub - Total (First Floor)')]});
+  cs.push({title:'Plumbing Work',desc:'Supply labour & Material to lay new Plumbing System with +GF+ Aquasystem by using PP-R Piping System , for Water Inlet & Water Discharge\nSelected area',rows:[
+    H('Extension Part'),I('New Plumbing System Piping with Consume',50,'mtr',135),
+    H('Outdoor'),I('Jabaco 330 Gallons Round Bottom S/S Steel With stand',1,'Nos',3200),
+    H('Ground Floor'),I('Kitchen Area',2,'Point',380),
+    H('First Floor'),I('Master bathroom',6,'Point',680,'Hot&Cold'),
+    N('Not Included Installation for Kitchen Accessory & Sanitary & Fiiting Item')]});
+  cs.push({title:'Door & Windows & Glass',desc:'To Supply Difference Material & Selected Item in Door & Windows & Glass , Such Like Metal , Plywood , Aluminium & Etc...\nSupply Material & Installation for all Aluminium Made Windows & Door , By using N/A Material ( Aluminium & Glass Silver ) , 1.6mm , Extrusion , Anodizing , Powder Coating ( Black )',rows:[
+    H('Windows Set'),I('4.2m x 0.6m',2.52,'m2',700,'Casement'),I('1.2m x 2.4m',2.88,'m2',700,'Casement'),
+    H('Folding Door Set'),I('2.4m x 2.7m',6.48,'m2',1550,'Multi Point'),I('3.8m x 2.7m',10.26,'m2',1550,'Multi Point'),I('4.2m x 2.7m',11.34,'m2',1550,'Multi Point'),I('3.8m x 2.7m',10.26,'m2',1550,'Multi Point'),
+    H('Fix Windows ( First Floor )'),I('4.2m x 2.7m',11.34,'m2',1550,'Multi Point'),I('1m x 2.7m',2.7,'m2',1550,'Multi Point'),I('0.6m x 2.7m',1.62,'m2',1550,'Multi Point'),
+    I('4.2m x 2.7m',11.34,'m2',950,'Multi Point'),I('3.8m x 2.7m',10.26,'m2',950,'Multi Point'),
+    H('Slidding Door Set'),I('1.0m x 2.4m ( M.BATH )',1,'Unit',2400,'Multi Point'),I('1.2m x 2.4m ( WIW 1 )',1,'Unit',2400,'Multi Point'),
+    H('Pivot Door Set'),I('1.0m x 2.1m',1,'Unit',1800,'Normal'),
+    H('Tempered Glass Door'),I('1.0m x 2.1m',2,'Unit',1800,'Normal')]});
+  cs.push({title:'Electrical Work',desc:'To supply & install new wiring with Sirim Certifited QC , Mega/MK for all Selected Area',rows:[
+    H('Ground Floor'),
+    I('Sub Distribution Box',1,'Nos',2300),I('Lighting Point ( Direct )',12,'nos',220),I('Lighting Point ( Looping )',26,'nos',40),
+    I('Socket Point - 13Amp ( Normal )',36,'nos',125),I('Socket Point - 13Amp ( Water Proof )',7,'nos',185),I('Socket Point - 15Amp ( Normal )',5,'nos',255),
+    I('Ac Point - 15Amp',2,'nos',260),I('Internet ( Lan Cable - CAT 6 )',3,'set',180),I('TEL - Phone wiring ( RJ11 )',1,'set',140),
+    I('Door Bell wiring ( R/W )',1,'set',90),I('TV Signal Point ( RG6 )',1,'point',140),I('CCTV Cable ( RG 56 )',8,'point',150),I('HDMI Cable',2,'point',110),
+    H('First Floor'),
+    I('Sub Distribution Box',1,'Nos',1300),I('Lighting Point ( Direct )',6,'nos',220),I('Lighting Point ( Looping )',18,'nos',40),
+    I('Socket Point - 13Amp ( Normal )',20,'nos',125),I('Socket Point - 15Amp ( Normal )',1,'nos',255),I('Socket Point - 13Amp ( Water Proof )',1,'nos',185),I('Ac Point - 15Amp',4,'nos',260),
+    S('SUB - TOTAL (Wiring)'),
+    N('To supply & install new fitting accesories & electrical point'),
+    H('Ground Floor'),
+    I("Single Effective Downlight ( 6'' - Cool White )",26,'nos',30),I('LED Strip Light 5m with Transformer',2,'roll',80),I('Column Light',2,'nos',300),
+    I('Ceiling fan',4,'nos',600),I('Ceiling Mounted Exhaust Fan',2,'nos',450),I("T5 LED light ( 4' fr )",3,'nos',35),I('Wall Light ( Internal )',4,'nos',200),I('Door Bell',1,'nos',90),
+    H('First Floor'),
+    I("Single Effective Downlight ( 6'' - Cool White )",30,'nos',30),I('LED Strip Light 5m with Transformer',3,'roll',80),I('Ceiling fan',3,'nos',600),
+    S('SUB - TOTAL (Fittings)')]});
+  cs.push({title:'Plaster Ceiling',desc:'To Supply and install Plaster Ceiling with Gypsum Board at Selected Area',rows:[
+    H('Overall'),I('Flat Ceiling',68,'m2',52),I('L Box',28.4,'tr',80),I('Main Hole',4,'unit',260),
+    H('Classic Deco'),I('Classic Deco',1,'Lsump',6000,'Exterior'),I('Classic Deco',1,'Lsump',8000,'Interior')]});
+  cs.push({title:'Floor & Wall Works',desc:'Providing and laying , with cement mortar 1:3 , Imprint with Texture Print , The Surface should be well smoothed',rows:[
+    H('Car Porch Area'),I('3.6m x 8.0m',28.8,'m2',180),
+    N('Providing and laying , with cement mortar 1:3 , Tiles And Filling The Joints with White Cement . The Surface should be well smoothed'),
+    H('Public Flat Level'),I('4.4 m x 9.8m',43.12,'m2',650,'Ground'),I('4.4 m x 5.4m',23.76,'m2',650,'First Floor'),
+    H('Bathroom Wall'),I('(2.1m + 1.2m + 2.1m + 1.2m) x 2.7m',17.82,'m2',180),I('(2.1m + 1.2m + 2.1m + 1.2m) x 2.7m',17.82,'m2',180),I('(4.2m + 4.2m + 4.2m + 4.2m) x 2.7m',45.36,'m2',180),
+    H('Water Proof'),I('4.4 m x 5.4m',23.76,'m2',80),S('Sub - Total'),
+    H('Artificial Wooden Flooring'),N('Providing and laying , with 7mm Thickness SPC ( Stone Panel Composite ) , Self Leveling & Foam Based ( 1 box 10 pc )'),
+    I('Self Leveling Based - 4.4 m x 9.8m',43.12,'m2',35),I('Solid Wood - 4.4 m x 9.8m',43.12,'m2',450),S('Sub - Total')]});
+  cs.push({title:'Painting Work',desc:'To supply paint with labour to paint at selected',rows:[
+    I('Interior Wall ( Dual Colour )',1,'Lsump',13600,'Existing'),I('Interior Wall ( Dual Colour )',1,'Lsump',6000,'Extended Area'),
+    I('Exterior Wall ( Only Base Covered in Extention Part )',1,'Lsump',5600),I('Plaster Ceiling',1,'Lsump',2800)]});
+  cs.push({title:'Air Cond System',desc:'To supply & install Aircond Copper & Water Discharge Point at Selected Area',rows:[
+    H('Ground Floor'),I('Kitchen - Cassette Unit - 2.0 Hp',35,'fr',35,'Cassette'),I('Kitchen - Wall Unit - 2.5 Hp',28,'fr',45,'Wall'),
+    H('First Floor'),I('M.Bathroom - Cassette - 2.5Hp',28,'fr',42,'Cassette'),S('Sub - Total (Piping)'),
+    N('Air Cond Unit Only ( Daikin )'),
+    H('Ground Floor'),I('Kitchen - Cassette Unit - 2.0 Hp',1,'Unit',3260,'Cassette'),I('Kitchen - Wall Unit - 2.5 Hp',1,'Unit',2600,'Wall'),
+    H('First Floor'),I('M.Bathroom - Cassette - 2.5Hp',1,'Unit',3780,'Cassette'),
+    H('Installation'),I('Wall Unit',3,'Unit',450),S('Sub - Total (Units)')]});
+  cs.push({title:'Carpentry',desc:'To supply & install customade furniture with Plywood / Melamine / Concrete / Aluminium at selected area',rows:[
+    H('Ground Floor'),H('Outdoor'),I('Shoe Cabinet ( 3.6m x 1.2m ) Low',12,'fr',650,'Aluminium'),
+    H('Living Area'),I('TV Cabinet ( 3.5m x 2.4m )',14,'fr',980,'Plywood'),I('Arc Door ( 5.3m x 3.0m )',17,'fr',560,'Plywood'),I('Arc Based Unit ( 2.4m x 1.2m )',8,'fr',620,'Plywood'),
+    H('Parent Area'),I('Partiton ( 5.2m x 3.0m )',17,'fr',450,'Ply+ Gypsum'),I('Walk in Wardrobe ( 4.2m x 3.0m )',14,'fr',980,'Plywood'),I('Dressing Table ( 1.5m x 0.75m )',5,'fr',760,'Plywood'),
+    H('Parent Room & Bath1'),I('Wardrobe ( 2.1m x 2.4m )',7,'fr',560,'Melamine'),I('Dressing Table ( 1.2m x 0.8m )',4,'fr',600,'Melamine'),I('Basin Cabinet ( 1.0m x 0.5m )',3,'fr',600,'Plywood'),
+    H('Dry Kitchen ( Existing Refurbish )'),I('Tall Unit ( 2.1m x 1.2m )',7,'fr',980,'Plywood'),
+    H('Laundry ( Existing Refurbish )'),I('Tall Unit ( 2.4m x 2.4m )',8,'fr',980,'Plywood'),
+    H('Wet Kitchen'),I('Based Unit ( 6.1m x 2.4m )',21,'fr',560,'Plywood'),I('Quartz Top ( 6.1m x 0.1m )',21,'fr',260,'Quartz'),I('Tall Unit ( 2.1 m x 0.3m )',7,'fr',980,'Plywood'),I('Wall Unit ( 2.1 m x 0.3m )',7,'fr',420,'Plywood'),I('Island Unit ( 3.0 m x 0.9m )',10,'fr',680,'Plywood'),I('Island Unit ( 4.8 m x 0.1m )',16,'fr',260,'Plywood'),
+    H('Dining Area'),I('Arc Door ( 4.2m x 3.0m )',14,'fr',560,'Plywood'),I('Arc Based Unit ( 1.8m x 1.2m )',6,'fr',620,'Plywood'),
+    H('First Floor'),H('Family Area'),I('TV Cabinet ( 2.4m x 2.4m )',8,'fr',650,'Plywood'),
+    H('Open Closet Room'),I('Wardrobe ( 3.8 m + 1.2 m + 1.5m ) x 2.4m',22,'fr',980,'Melamine'),
+    H('Master Bedroom'),I('Wallpanel ( 4.2m x 3.0m )',14,'fr',480,'Melamine'),I('Side Drawer ( 4.2m x 3.0m )',2,'unit',800,'Melamine'),I('Wallpanel ( 4.2m x 3.0m ) ARC',14,'fr',580,'Plywood'),
+    H('Walk in Wardrobe'),I('Wardrobe ( 3.8 m + 1.2m + 2.1m ) x 3.0m',23.5,'fr',1180,'Plywood'),I('Bench ( 1.8 x 1m )',23.5,'fr',580,'Plywood'),I('Dressing Table ( 1.8 x 1m )',6,'fr',580,'Plywood'),
+    H('Master Bathroom'),I('Based Island Unit ( 2.4m x 0.6m ) x 3.0m',8,'fr',480,'Melamine'),I('Marble Top ( 2.4m x 0.1m )',8,'fr',320,'Melamine'),I('Tall Unit - Metal ( 4.3m x 1.2m )',8,'fr',650,'Metal/Glass')]});
+  cs.push({title:'Equipment Accessories',desc:'To supply & install Equipment accessories for selected area',rows:[
+    H('Whole Unit Kitchen Sanitary'),I('Basin',2,'Nos',1200),I('Water Faucet',2,'Nos',450),
+    H('Whole Unit Toilet Sanitary'),I('Toilet Bowl',1,'Unit',850),I('Basin Set With Faucet',2,'Set',500),I('Bidet with 2 way Tape',1,'Set',150),
+    H('Rain Shower System'),I('Rain Shower',1,'Nos',500),I('Mixer Control',1,'Nos',460),I('Heater Water Tank',1,'Nos',1800,'Water Tank Type')]});
+  cs.push({title:'Soft Furnishing',desc:'Soft Furnishing such like curtain & Decorative Item & Loose Furniture',rows:[
+    H('Windows Covering ( Extension Area )'),H('Ground Floor'),
+    I('4.3m x 6.3m',27.09,'m2',350,'Double Layer'),I('3.9m x 6.3m',24.57,'m2',350,'Double Layer'),
+    H('First Floor'),I('2.4m x 3.0m',7.2,'m2',350,'Double Layer'),
+    H('Loose Furniture'),BL('Sofa Set'),BL('Coffee Table'),BL('Bar Stool'),BL('Dining Chair'),BL('Study Chair'),BL('Dressing Chair'),BL('King Size Bed With Divan & Bedhead'),BL('Queen Size Bed With Divan & Bedhead'),BL('Queen Size Bed With Divan'),BL('Single Size Bed With Divan'),BL('Bedroom Side Table')]});
+  q.sections=cs;
+  q.termsText=q.termsText.replace('until {{validUntil}}. After this date','until [validity period date]. After this date');
+  return q;
+}
+
+/* ---------- state ---------- */
+let Q=store.get('qg_current',null)||newQuote();
+let catalog=store.get('qg_catalog',null);
+function catalogFrom(q){const m=new Map();q.sections.forEach(s=>s.rows.forEach(r=>{if(r.type==='item'&&r.desc&&r.price!==''){const k=r.desc.trim().toLowerCase();if(!m.has(k))m.set(k,{desc:r.desc.trim(),unit:r.unit,price:r.price})}}));return [...m.values()]}
+if(!catalog){catalog=catalogFrom(sampleQuote());store.set('qg_catalog',catalog)}
+
+/* ---------- calculations ---------- */
+function compute(q){
+  const secs=q.sections.map(s=>{
+    let run=0,tot=0;const amts=s.rows.map(r=>{
+      if(r.type==='item'){const a=(r.qty!==''&&r.price!==''&&!isNaN(+r.qty)&&!isNaN(+r.price))?r2(+r.qty*+r.price):0;run+=a;tot+=a;return a}
+      if(r.type==='subtotal'){const a=r2(run);run=0;return a}
+      return null});
+    return {amts,total:r2(tot)};
+  });
+  const subtotal=r2(secs.reduce((a,s)=>a+s.total,0));
+  const fee=q.supervisor.on?r2(subtotal*(+q.supervisor.rate||0)/100):0;
+  const discount=r2(+q.discount||0);
+  const base=r2(subtotal+fee-discount);
+  const sst=q.sst.on?r2(base*(+q.sst.rate||0)/100):0;
+  return {secs,subtotal,fee,discount,sst,total:r2(base+sst)};
+}
+
+/* ---------- editor ---------- */
+const TYPES=[['item','项目'],['heading','小标题'],['note','备注'],['subtotal','小计']];
+function rowHTML(r,si,ri){
+  const sel=`<select data-f="type">${TYPES.map(t=>`<option value="${t[0]}"${r.type===t[0]?' selected':''}>${t[1]}</option>`).join('')}</select>`;
+  const ops=`<span class="ops"><button data-act="rowUp" title="上移">↑</button><button data-act="rowDown" title="下移">↓</button><button data-act="rowDup" title="复制">⧉</button><button class="del" data-act="rowDel" title="删除">✕</button></span>`;
+  if(r.type==='item') return `<div class="row" data-r="${ri}">${sel}<input data-f="desc" list="catalogList" value="${esc(r.desc)}" placeholder="描述"><input data-f="ref" value="${esc(r.ref)}" placeholder="Ref"><input data-f="qty" type="number" step="any" value="${esc(r.qty)}" placeholder="数量"><input data-f="unit" value="${esc(r.unit)}" placeholder="单位"><input data-f="price" type="number" step="any" value="${esc(r.price)}" placeholder="单价"><span class="amt"></span>${ops}</div>`;
+  return `<div class="row text ${r.type}" data-r="${ri}">${sel}<input data-f="desc" value="${esc(r.desc)}" placeholder="${r.type==='subtotal'?'Sub - Total':'文字'}"><span class="amt"></span>${ops}</div>`;
+}
+function secHTML(s,si){
+  return `<div class="sec" data-s="${si}">
+    <div class="sechead"><span class="secno">${si+1}</span><input data-f="title" value="${esc(s.title)}" placeholder="工程项目名称（如 Plumbing Work）"><span class="ops"><button data-act="secUp">↑</button><button data-act="secDown">↓</button><button data-act="secDup" title="复制">⧉</button><button class="del" data-act="secDel">✕</button></span></div>
+    <textarea data-f="desc" rows="2" placeholder="项目说明（选填）">${esc(s.desc)}</textarea>
+    <div class="rows"><div class="row colhead"><span>类型</span><span>描述</span><span>Ref</span><span>数量</span><span>单位</span><span>单价</span><span style="text-align:right">金额</span><span></span></div>${s.rows.map((r,ri)=>rowHTML(r,si,ri)).join('')}</div>
+    <div class="addbar"><button data-act="addItem">＋ 项目</button><button data-act="addHeading">＋ 小标题</button><button data-act="addNote">＋ 备注</button><button data-act="addSub">＋ 小计</button><span class="grow" style="flex:1"></span><b class="sectot" style="font-size:13px"></b></div>
+  </div>`;
+}
+function renderEditor(){
+  $('#sections').innerHTML=Q.sections.map(secHTML).join('')||'<p class="hint">还没有工程项目。点下面「新增工程项目」，或先「载入范例 Q10357」参考。</p>';
+  document.querySelectorAll('[data-bind]').forEach(el=>{const v=getP(Q,el.dataset.bind);if(el.type==='checkbox')el.checked=!!v;else el.value=v??''});
+  $('#catalogList').innerHTML=catalog.map(c=>`<option value="${esc(c.desc)}">`).join('');
+  refresh(false);
+}
+function updateAmounts(c){
+  document.querySelectorAll('#sections .sec').forEach((sec,si)=>{
+    sec.querySelectorAll('.row[data-r]').forEach((row,ri)=>{const a=c.secs[si].amts[ri];const o=row.querySelector('.amt');if(o)o.textContent=a==null?'':fmt(a)});
+    const t=sec.querySelector('.sectot');if(t)t.textContent='小计 RM '+fmt(c.secs[si].total);
+  });
+  $('#topTotal').textContent='总计 RM '+fmt(c.total);
+}
+
+/* ---------- preview ---------- */
+function lines(s){return esc(s).replace(/\n/g,'<br>')}
+function renderPreview(c){
+  const q=Q;let h='';
+  h+=`<div class="co"><h1>${esc(q.company.name)}${q.company.reg?`&nbsp;&nbsp;<span style="font-weight:400;font-size:9pt">${esc(q.company.reg)}</span>`:''}</h1><div>${lines(q.company.addr)}</div><div>${esc(q.company.tel)}</div></div>`;
+  h+=`<div class="meta"><div class="to">${esc(q.client.name)?`<b>${esc(q.client.name)}</b>\n`:''}${esc(q.client.addr)}${q.client.attn?`\nAttn : ${esc(q.client.attn)}`:''}${q.client.contact?`    Contact : ${esc(q.client.contact)}`:''}</div>
+    <table><tr><td>Quotation No :</td><td><b>${esc(q.meta.no)}</b></td></tr><tr><td>Reference No :</td><td>${esc(q.meta.ref)}</td></tr><tr><td>Quote No :</td><td>${esc(q.meta.quoteNo)}</td></tr><tr><td>Date :</td><td>${fmtDate(q.meta.date)}</td></tr><tr><td>Term :</td><td>${esc(q.meta.term)}</td></tr></table></div>`;
+  if(q.project)h+=`<div class="proj">PROJECT : ${esc(q.project)}</div>`;
+  h+=`<table class="q"><colgroup><col style="width:5%"><col style="width:42%"><col style="width:11%"><col style="width:9%"><col style="width:7%"><col style="width:12%"><col style="width:14%"></colgroup><thead><tr><th>No</th><th>Description</th><th>Reference</th><th class="r">Qty</th><th>Unit</th><th class="r">Unit Price</th><th class="r">Total (RM)</th></tr></thead><tbody>`;
+  q.sections.forEach((s,si)=>{
+    h+=`<tr class="sh"><td>${si+1}</td><td colspan="6">${esc(s.title)}</td></tr>`;
+    if(s.desc)h+=`<tr class="secdesc"><td></td><td colspan="6">${esc(s.desc)}</td></tr>`;
+    s.rows.forEach((r,ri)=>{
+      const a=c.secs[si].amts[ri];
+      if(r.type==='item')h+=`<tr><td></td><td>${esc(r.desc)}</td><td>${esc(r.ref)}</td><td class="num">${fmtQ(r.qty)}</td><td>${esc(r.unit)}</td><td class="num">${r.price===''?'':fmt(r.price)}</td><td class="num">${a?fmt(a):(r.price!==''&&r.qty!==''?'-':'')}</td></tr>`;
+      else if(r.type==='heading')h+=`<tr class="heading"><td></td><td colspan="6">${esc(r.desc)}</td></tr>`;
+      else if(r.type==='note')h+=`<tr class="note"><td></td><td colspan="6">${esc(r.desc)}</td></tr>`;
+      else h+=`<tr class="subtotal"><td></td><td colspan="5" class="r">${esc(r.desc)}</td><td class="num">${fmt(a)}</td></tr>`;
+    });
+    h+=`<tr class="sectotal"><td></td><td colspan="5" class="r">Sub - Total</td><td class="num">${fmt(c.secs[si].total)}</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  h+=`<div class="sum"><table>`;
+  q.sections.forEach((s,si)=>{h+=`<tr><td style="width:6%">${si+1}</td><td>${esc(s.title)}</td><td class="num" style="width:22%">${fmt(c.secs[si].total)}</td></tr>`});
+  h+=`<tr class="b"><td></td><td>Sub - Total</td><td class="num">${fmt(c.subtotal)}</td></tr>`;
+  if(q.supervisor.on)h+=`<tr><td></td><td>Renovation Supervisor Fee (${+q.supervisor.rate||0}%)</td><td class="num">${fmt(c.fee)}</td></tr>`;
+  if(c.discount)h+=`<tr><td></td><td>Discount</td><td class="num">-${fmt(c.discount)}</td></tr>`;
+  if(q.sst.on)h+=`<tr><td></td><td>SST (${+q.sst.rate||0}%)</td><td class="num">${fmt(c.sst)}</td></tr>`;
+  h+=`<tr class="grand"><td></td><td>Total All (RM)</td><td class="num">${fmt(c.total)}</td></tr></table></div>`;
+  const vu=q.meta.validUntil?fmtDate(q.meta.validUntil):'[validity period date]';
+  const terms=q.termsText.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>`<p>&gt; ${esc(x.replace(/\{\{validUntil\}\}/g,vu))}</p>`).join('');
+  h+=`<div class="terms"><h3>Please Note :</h3>${terms}</div>`;
+  if(q.payee)h+=`<div class="payee">- ${esc(q.payee)}</div>`;
+  h+=`<div class="end"><div class="sign"><div><div class="line"></div>Sign By<br>Name :<br>Date :</div></div>`;
+  if(q.company.foot)h+=`<div class="foot">${esc(q.company.foot)}</div>`;
+  h+=`</div>`;
+  $('#sheet').innerHTML=h;
+}
+let saveT;
+function refresh(auto=true){
+  const c=compute(Q);updateAmounts(c);renderPreview(c);
+  if(auto){clearTimeout(saveT);saveT=setTimeout(()=>store.set('qg_current',Q),300)}
+  fitPreview();
+}
+function fitPreview(){
+  const w=$('.preview-wrap').clientWidth-28;const px=210*3.7795;
+  document.documentElement.style.setProperty('--zoom',Math.min(1,Math.max(.4,w/px)).toFixed(3));
+}
+addEventListener('resize',fitPreview);
+
+/* ---------- events ---------- */
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.bind){setP(Q,t.dataset.bind,t.type==='checkbox'?t.checked:t.value);
+    if(t.dataset.bind==='meta.date'&&t.value&&!Q.meta.validUntil){Q.meta.validUntil=addDays(t.value,30);document.querySelector('[data-bind="meta.validUntil"]').value=Q.meta.validUntil}
+    if(t.dataset.bind.startsWith('company.'))store.set('qg_company',Q.company);
+    refresh();return}
+  const f=t.dataset.f;if(!f)return;
+  const secEl=t.closest('.sec');if(!secEl)return;
+  const s=Q.sections[+secEl.dataset.s];const rowEl=t.closest('.row[data-r]');
+  if(rowEl){const r=s.rows[+rowEl.dataset.r];r[f]=t.value;if(f==='type'){renderEditor();return}}else s[f]=t.value;
+  refresh();
+});
+document.addEventListener('change',e=>{
+  const t=e.target;if(t.dataset.f!=='desc')return;const rowEl=t.closest('.row[data-r]');if(!rowEl)return;
+  const s=Q.sections[+t.closest('.sec').dataset.s];const r=s.rows[+rowEl.dataset.r];
+  if(r.type!=='item')return;const hit=catalog.find(c=>c.desc.toLowerCase()===r.desc.trim().toLowerCase());
+  if(hit&&r.price===''&&!r.unit){r.unit=hit.unit;r.price=String(hit.price);rowEl.querySelector('[data-f="unit"]').value=r.unit;rowEl.querySelector('[data-f="price"]').value=r.price;refresh()}
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act;
+  const secEl=b.closest('.sec');const si=secEl?+secEl.dataset.s:-1;const rowEl=b.closest('.row[data-r]');const ri=rowEl?+rowEl.dataset.r:-1;
+  const mv=(a,i,d)=>{const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]]};
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  if(act==='secUp')mv(Q.sections,si,-1);
+  else if(act==='secDown')mv(Q.sections,si,1);
+  else if(act==='secDup')Q.sections.splice(si+1,0,clone(Q.sections[si]));
+  else if(act==='secDel'){if(confirm('删除这个工程项目？'))Q.sections.splice(si,1);else return}
+  else if(act==='rowUp')mv(Q.sections[si].rows,ri,-1);
+  else if(act==='rowDown')mv(Q.sections[si].rows,ri,1);
+  else if(act==='rowDup')Q.sections[si].rows.splice(ri+1,0,clone(Q.sections[si].rows[ri]));
+  else if(act==='rowDel')Q.sections[si].rows.splice(ri,1);
+  else if(act==='addItem')Q.sections[si].rows.push(I('','','',''));
+  else if(act==='addHeading')Q.sections[si].rows.push(H(''));
+  else if(act==='addNote')Q.sections[si].rows.push(N(''));
+  else if(act==='addSub')Q.sections[si].rows.push(S(''));
+  else return;
+  renderEditor();store.set('qg_current',Q);
+});
+$('#addSection').onclick=()=>{Q.sections.push({title:'',desc:'',rows:[I('','','','')]});renderEditor();store.set('qg_current',Q);const els=document.querySelectorAll('.sec');els[els.length-1]?.scrollIntoView({behavior:'smooth',block:'center'})};
+
+/* ---------- top bar ---------- */
+$('#bNew').onclick=()=>{if(!confirm('新建一份空白报价？未保存的内容会丢失（可先点「保存」）。'))return;Q=newQuote();renderEditor();store.set('qg_current',Q)};
+$('#bSample').onclick=()=>{if(!confirm('载入范例 Q10357 会覆盖当前内容，继续？'))return;Q=sampleQuote();Q.meta.date=today();Q.meta.validUntil=addDays(Q.meta.date,30);Q.termsText=DEFAULT_TERMS;renderEditor();store.set('qg_current',Q);toast('已载入范例')};
+function draftsGet(){return store.get('qg_drafts',{})}
+$('#bSave').onclick=()=>{const d=draftsGet();const id=Q.meta.no||('draft-'+Date.now());d[id]={saved:new Date().toISOString(),q:Q};if(store.set('qg_drafts',d))toast('已保存 '+id);else toast('保存失败：浏览器存储已满或被禁用，请用「导出文件」')};
+$('#bDrafts').onclick=()=>{
+  const d=draftsGet();const keys=Object.keys(d).sort((a,b)=>d[b].saved.localeCompare(d[a].saved));
+  $('#draftList').innerHTML=keys.length?`<table><thead><tr><th>单号</th><th>客户</th><th>工程</th><th style="text-align:right">总计 RM</th><th></th></tr></thead><tbody>${keys.map(k=>{const q=d[k].q;return `<tr><td>${esc(k)}</td><td>${esc(q.client.name)}</td><td>${esc((q.project||'').slice(0,40))}</td><td style="text-align:right">${fmt(compute(q).total)}</td><td style="white-space:nowrap"><button class="mini" data-open="${esc(k)}">打开</button> <button class="mini danger" data-del="${esc(k)}">删除</button></td></tr>`}).join('')}</tbody></table>`:'<p class="hint">还没有保存的报价。注意：保存在这台电脑的这个浏览器里；要给别人或换电脑，请用「导出文件」。</p>';
+  $('#dlgDrafts').showModal();
+};
+$('#draftList').onclick=e=>{const o=e.target.dataset.open,x=e.target.dataset.del;const d=draftsGet();
+  if(o&&d[o]){Q=d[o].q;renderEditor();store.set('qg_current',Q);$('#dlgDrafts').close();toast('已打开 '+o)}
+  if(x&&confirm('删除 '+x+'？')){delete d[x];store.set('qg_drafts',d);$('#bDrafts').click()}};
+$('#bExport').onclick=()=>{const blob=new Blob([JSON.stringify(Q,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Quotation-${Q.meta.no||'draft'}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('#bImport').onclick=()=>$('#fileIn').click();
+$('#fileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const q=JSON.parse(rd.result);if(!q.sections||!q.meta)throw 0;Q=Object.assign(newQuote(),q);renderEditor();store.set('qg_current',Q);toast('已导入')}catch(err){alert('这不是有效的报价文件')}};rd.readAsText(f);e.target.value=''};
+$('#bPdf').onclick=()=>{
+  const old=document.title;document.title=`Quotation ${Q.meta.no||''}${Q.client.name?' - '+Q.client.name:''}`.trim();
+  const done=()=>{document.title=old;removeEventListener('afterprint',done)};addEventListener('afterprint',done);
+  window.print();
+};
+/* catalog dialog */
+function renderCat(){$('#catBody').innerHTML=catalog.map((c,i)=>`<tr><td><input data-ci="${i}" data-cf="desc" value="${esc(c.desc)}"></td><td><input data-ci="${i}" data-cf="unit" value="${esc(c.unit)}"></td><td><input data-ci="${i}" data-cf="price" type="number" step="any" value="${esc(c.price)}"></td><td><button class="mini danger" data-cdel="${i}">✕</button></td></tr>`).join('');$('#catalogList').innerHTML=catalog.map(c=>`<option value="${esc(c.desc)}">`).join('')}
+$('#bCatalog').onclick=()=>{renderCat();$('#dlgCatalog').showModal()};
+$('#catBody').addEventListener('input',e=>{const t=e.target;if(t.dataset.ci==null)return;catalog[+t.dataset.ci][t.dataset.cf]=t.value;store.set('qg_catalog',catalog)});
+$('#catBody').addEventListener('click',e=>{const i=e.target.dataset.cdel;if(i==null)return;catalog.splice(+i,1);store.set('qg_catalog',catalog);renderCat()});
+$('#catAdd').onclick=()=>{catalog.unshift({desc:'',unit:'',price:''});store.set('qg_catalog',catalog);renderCat()};
+$('#catFromQuote').onclick=()=>{const have=new Set(catalog.map(c=>c.desc.trim().toLowerCase()));let n=0;catalogFrom(Q).forEach(c=>{if(!have.has(c.desc.toLowerCase())){catalog.push(c);n++}});store.set('qg_catalog',catalog);renderCat();toast(`补充了 ${n} 条`)};
+$('#catClose').onclick=()=>$('#dlgCatalog').close();
+
+renderEditor();
+</script>
+</body>
+</html>
