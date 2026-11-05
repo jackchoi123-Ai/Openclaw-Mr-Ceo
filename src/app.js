@@ -48,6 +48,8 @@ const I18N = {
     moveL: '往前移', moveR: '往后移', delDept: '删除部门', expand: '展开 / 收起',
     sumOpen: '未完成', sumOverdue: '已逾期', sumDone: '已完成', deptTasks: '部门 task',
     dueLabel: '日期时间', levelLabel: '等级',
+    people: '负责人名单', peopleHint: '在 task 里输入新名字会自动加入名单。', addPerson: '添加负责人', personPh: '负责人名字',
+    allOwners: '全部负责人', noOwner: '未指定负责人', ownerSel: '负责人', removePerson: n => `从名单移除 ${n}`,
     loginTitle: '登录', email: '邮箱', password: '密码', loginBtn: '登录', loggingIn: '正在登录…', forgot: '忘记密码？',
     loginErr: '邮箱或密码不对，请再试一次。', loginOffline: '现在没有网络。第一次登录需要联网，之后就可以离线使用。',
     resetSent: e => `重设密码的邮件已发到 ${e}，请查收。`, resetNeedEmail: '请先在上面填写邮箱，再点「忘记密码」。',
@@ -102,6 +104,8 @@ const I18N = {
     moveL: 'Move earlier', moveR: 'Move later', delDept: 'Delete department', expand: 'Expand / collapse',
     sumOpen: 'Open', sumOverdue: 'Overdue', sumDone: 'Done', deptTasks: 'Department tasks',
     dueLabel: 'Date & time', levelLabel: 'Level',
+    people: 'Owners', peopleHint: 'Typing a new name on a task adds it to this list.', addPerson: 'Add owner', personPh: 'Owner name',
+    allOwners: 'All owners', noOwner: 'No owner', ownerSel: 'Owner', removePerson: n => `Remove ${n} from the list`,
     loginTitle: 'Sign in', email: 'Email', password: 'Password', loginBtn: 'Sign in', loggingIn: 'Signing in…', forgot: 'Forgot password?',
     loginErr: 'That email or password is not right. Try again.', loginOffline: 'You are offline. The first sign-in needs a connection; after that the app works offline.',
     resetSent: e => `A password reset email was sent to ${e}.`, resetNeedEmail: 'Enter your email above first, then tap Forgot password.',
@@ -161,6 +165,7 @@ const normCompany = c => {
   if (!TYPE_KEYS.includes(o.type)) o.type = 'startup';
   o.stage = Math.min(Math.max(Number(o.stage) || 0, 0), STAGE_COUNT[o.type] - 1);
   if (!HEALTH_KEYS.includes(o.health)) o.health = 'green';
+  o.people = Array.isArray(c.people) ? [...new Set(c.people.map(x => String(x).trim()).filter(Boolean))] : [];
   return o;
 };
 const normTask = t => ({
@@ -174,7 +179,7 @@ const setCompanies = list => { state.companies = list.map(normCompany).sort((a, 
 const setTasks = list => { state.tasks = list.map(normTask); };
 const normDetail = d => ({ id: d.id || uid(), text: d.text || '', date: d.date || '', done: !!d.done });
 const normDTask = t => ({
-  id: t.id || uid(), title: t.title || '', due: t.due || '', level: LEVELS.includes(t.level) ? t.level : 'normal',
+  id: t.id || uid(), title: t.title || '', owner: (t.owner || '').trim(), due: t.due || '', level: LEVELS.includes(t.level) ? t.level : 'normal',
   done: !!t.done, doneAt: t.doneAt || '', createdAt: t.createdAt || new Date().toISOString(),
   details: Array.isArray(t.details) ? t.details.map(normDetail) : [],
 });
@@ -391,7 +396,7 @@ function taskEditor(t) {
     <div class="row">
       <div><label for="te-kind-${id}">${esc(T.kind)}</label><select id="te-kind-${id}" data-tfield="kind" data-tid="${id}" ${d}>${opt(['todo', 'followup'], T.kinds, t.kind)}</select></div>
       <div><label for="te-company-${id}">${esc(T.company)}</label><select id="te-company-${id}" data-tfield="company" data-tid="${id}" ${d}>${companyOpts(t.company, T.noCompany)}</select></div>
-      <div><label for="te-owner-${id}">${esc(T.owner)}</label><input id="te-owner-${id}" data-tfield="owner" data-tid="${id}" value="${esc(t.owner)}" placeholder="${esc(T.ownerPh)}" ${d}></div>
+      <div><label for="te-owner-${id}">${esc(T.owner)}</label><input id="te-owner-${id}" data-tfield="owner" data-tid="${id}" value="${esc(t.owner)}" placeholder="${esc(T.ownerPh)}" list="${t.company ? 'people-' + esc(t.company) : 'people-all'}" autocomplete="off" ${d}></div>
     </div>
     <div class="row">
       <div><label for="te-start-${id}">${esc(T.start)}</label><input type="date" id="te-start-${id}" data-tfield="start" data-tid="${id}" value="${esc(t.start)}" ${d}></div>
@@ -423,7 +428,7 @@ function addTaskForm(fixedCompany) {
       ${fixedCompany ? '' : `<div><label for="${p}-company">${esc(T.company)}</label><select name="company" id="${p}-company">${companyOpts(ui.company, T.noCompany)}</select></div>`}
     </div>
     <div class="row" style="margin-top:8px">
-      <div><label for="${p}-owner">${esc(T.owner)}</label><input name="owner" id="${p}-owner" placeholder="${esc(T.ownerPh)}"></div>
+      <div><label for="${p}-owner">${esc(T.owner)}</label><input name="owner" id="${p}-owner" placeholder="${esc(T.ownerPh)}" list="${fixedCompany ? 'people-' + esc(fixedCompany) : 'people-all'}" autocomplete="off"></div>
       <div class="w-date"><label for="${p}-start">${esc(T.start)}</label><input type="date" name="start" id="${p}-start" value="${today()}"></div>
       <div style="flex:0 1 210px"><label for="${p}-remind">${esc(T.remind)}</label><input type="datetime-local" name="remind" id="${p}-remind"></div>
       <div class="w-sm"><label for="${p}-pri">${esc(T.priority)}</label><select name="priority" id="${p}-pri">${opt(PRI_KEYS, T.pri, 'none')}</select></div>
@@ -603,15 +608,39 @@ const sortDTasks = list => [
 ];
 const lvOpts = cur => opt(LEVELS, L().levels, cur);
 
+/* owners: each company keeps its own list; names typed on tasks join it */
+const byName = (a, b) => a.localeCompare(b, 'zh');
+const peopleOf = code => {
+  const c = co(code), set = new Set(c ? c.people : []);
+  deptsOf(code).forEach(d => d.tasks.forEach(t => t.owner && set.add(t.owner)));
+  state.tasks.forEach(t => t.company === code && t.owner && set.add(t.owner));
+  return [...set].sort(byName);
+};
+const allPeople = () => [...new Set([...state.companies.flatMap(c => peopleOf(c.code)), ...state.tasks.map(t => t.owner).filter(Boolean)])].sort(byName);
+const peopleList = (id, names) => `<datalist id="${id}">${names.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+function rememberPerson(code, name) {
+  const c = co(code);
+  if (!c || !name || c.people.includes(name)) return;
+  mutate(code, x => { x.people = [...x.people, name].sort(byName); });
+}
+const deptOwner = {};   // per-company owner filter on the department board
+
 function tabDepts(c) {
-  const T = L(), list = deptsOf(c.code), st = deptStats(c.code);
+  const T = L(), list = deptsOf(c.code), st = deptStats(c.code), people = peopleOf(c.code);
+  if (deptOwner[c.code] && deptOwner[c.code] !== '__none__' && !people.includes(deptOwner[c.code])) delete deptOwner[c.code];
   return `
   ${list.length ? `<div class="dept-summary">
     <span class="pill"><b>${st.open}</b>${esc(T.sumOpen)}</span>
     ${['priority', 'urgent', 'important'].map(l => `<span class="pill"><b>${st.byLevel[l]}</b><span class="lv ${l}">${esc(T.levels[l])}</span></span>`).join('')}
     <span class="pill"><b class="${st.overdue ? 'warn' : ''}">${st.overdue}</b>${esc(T.sumOverdue)}</span>
     <span class="pill"><b>${st.done}</b>${esc(T.sumDone)}</span>
+    <select id="own-flt-${esc(c.code)}" data-owner-filter="${esc(c.code)}" class="owner-filter" aria-label="${esc(T.owner)}">
+      <option value="">${esc(T.allOwners)}</option>
+      ${people.map(n => `<option value="${esc(n)}" ${deptOwner[c.code] === n ? 'selected' : ''}>👤 ${esc(n)}</option>`).join('')}
+      <option value="__none__" ${deptOwner[c.code] === '__none__' ? 'selected' : ''}>${esc(T.noOwner)}</option>
+    </select>
   </div>` : ''}
+
   ${state.canWrite ? `<div class="card add-card">
     <form data-form="dept" id="nd-form" data-company="${esc(c.code)}" class="new-dept">
       <input name="name" id="nd-name" required placeholder="${esc(T.newDept)}" aria-label="${esc(T.addDept)}">
@@ -619,12 +648,23 @@ function tabDepts(c) {
     </form>
     ${(() => { const have = new Set(list.map(d => d.name.toLowerCase())); const left = (DEPT_PRESETS[c.code] || DEPT_PRESETS.A).filter(p => !have.has(p.toLowerCase()));
       return left.length ? `<div class="dept-presets"><span class="sub">${esc(T.presets)}</span>${left.map(p => `<button class="small" data-act="dept-preset" data-company="${esc(c.code)}" data-name="${esc(p)}">+ ${esc(p)}</button>`).join('')}</div>` : ''; })()}
+    <div class="people">
+      <div class="people-head"><b>${esc(T.people)}</b><span class="sub">${esc(T.peopleHint)}</span></div>
+      <div class="chips">
+        ${c.people.map(n => `<span class="person">👤 ${esc(n)}<button class="ghost" data-act="person-del" data-company="${esc(c.code)}" data-name="${esc(n)}" aria-label="${esc(T.removePerson(n))}" title="${esc(T.removePerson(n))}">✕</button></span>`).join('')}
+        <form data-form="person" data-company="${esc(c.code)}" id="np-form-${esc(c.code)}" class="person-add">
+          <input name="name" id="np-name-${esc(c.code)}" required placeholder="${esc(T.personPh)}" aria-label="${esc(T.addPerson)}">
+          <button class="small">+ ${esc(T.addPerson)}</button>
+        </form>
+      </div>
+    </div>
   </div>` : ''}
-  ${list.length ? `<div class="dept-board">${list.map((d, i) => deptCard(d, i, list.length)).join('')}</div>` : `<div class="card empty">${esc(T.deptEmpty)}</div>`}`;
+  ${list.length ? `<div class="dept-board">${list.map((d, i) => deptCard(d, i, list.length, deptOwner[c.code])).join('')}</div>` : `<div class="card empty">${esc(T.deptEmpty)}</div>`}`;
 }
 
-function deptCard(d, i, n) {
+function deptCard(d, i, n, ownerFilter) {
   const T = L(), open = d.tasks.filter(t => !t.done).length;
+  const shown = !ownerFilter ? d.tasks : d.tasks.filter(t => ownerFilter === '__none__' ? !t.owner : t.owner === ownerFilter);
   return `<section class="card dept" aria-label="${esc(d.name)}">
     <div class="dept-head">
       <input class="dept-name" id="dn-${d.id}" data-dname="${d.id}" value="${esc(d.name)}" aria-label="${esc(T.tabDepts)}" ${ro()}>
@@ -636,11 +676,12 @@ function deptCard(d, i, n) {
     <div class="dept-body">
       ${state.canWrite ? `<form data-form="dtask" data-did="${d.id}" id="dt-form-${d.id}" class="dept-add">
         <input name="title" id="dt-title-${d.id}" required placeholder="${esc(T.deptTaskPh)}" aria-label="${esc(T.deptTaskPh)}">
+        <input name="owner" id="dt-owner-${d.id}" list="people-${esc(d.company)}" placeholder="👤 ${esc(T.ownerSel)}" aria-label="${esc(T.owner)}" autocomplete="off" value="${ownerFilter && ownerFilter !== '__none__' ? esc(ownerFilter) : ''}">
         <input type="datetime-local" name="due" id="dt-due-${d.id}" aria-label="${esc(T.dueLabel)}">
         <select name="level" id="dt-lv-${d.id}" aria-label="${esc(T.levelLabel)}">${lvOpts('normal')}</select>
         <button class="primary small">${esc(T.add)}</button>
       </form>` : ''}
-      ${d.tasks.length ? sortDTasks(d.tasks).map(t => dTaskRow(d, t)).join('') : `<div class="empty">${esc(T.deptNoTasks)}</div>`}
+      ${shown.length ? sortDTasks(shown).map(t => dTaskRow(d, t)).join('') : `<div class="empty">${esc(T.deptNoTasks)}</div>`}
     </div>
   </section>`;
 }
@@ -654,6 +695,7 @@ function dTaskRow(d, t) {
         <div class="dtask-title">${esc(t.title)}</div>
         <div class="dtask-meta">
           <span class="lv ${t.level}">${esc(T.levels[t.level])}</span>
+          ${t.owner ? `<span class="owner-chip">👤 ${esc(t.owner)}</span>` : ''}
           ${t.due ? `<span class="mono ${dOverdue(t) ? 'warn' : ''}">${SVG_BELL} ${esc(fmtRemind(t.due))}</span>` : ''}
           ${t.details.length ? `<span>${esc(T.details)} <span class="num">${dd}/${t.details.length}</span></span>` : ''}
           <span class="chev ${open ? 'open' : ''}">▶</span>
@@ -663,6 +705,7 @@ function dTaskRow(d, t) {
     ${open ? `<div class="dtask-detail">
       ${state.canWrite ? `<div class="dtask-edit">
         <input id="dte-title-${t.id}" data-dtf="title" data-did="${d.id}" data-tid="${t.id}" value="${esc(t.title)}" aria-label="${esc(T.taskTitle)}">
+        <input id="dte-owner-${t.id}" data-dtf="owner" data-did="${d.id}" data-tid="${t.id}" value="${esc(t.owner)}" list="people-${esc(d.company)}" placeholder="👤 ${esc(T.ownerSel)}" aria-label="${esc(T.owner)}" autocomplete="off">
         <input type="datetime-local" id="dte-due-${t.id}" data-dtf="due" data-did="${d.id}" data-tid="${t.id}" value="${esc(t.due)}" aria-label="${esc(T.dueLabel)}">
         <select id="dte-lv-${t.id}" data-dtf="level" data-did="${d.id}" data-tid="${t.id}" aria-label="${esc(T.levelLabel)}">${lvOpts(t.level)}</select>
         ${delBtn('dtask.' + d.id, t.id)}
@@ -808,7 +851,8 @@ function render() {
   if (state.mode === 'login') { app.innerHTML = loginView(); restoreForm(snap); return; }
   if (state.mode === 'denied') { app.innerHTML = `<div class="card login"><p>${esc(T.noAccess)}</p><p class="sub">${esc(currentEmail())}</p><button data-act="logout">${esc(T.logout)}</button></div>`; return; }
   const page = { overview: renderOverview, tasks: renderTasks, review: renderReview, detail: renderDetail }[view.page] || renderOverview;
-  app.innerHTML = banners() + page() + `<div class="foot">${esc(state.mode === 'db' ? T.footDb : T.footLocal)}</div>`;
+  app.innerHTML = banners() + page() + `<div class="foot">${esc(state.mode === 'db' ? T.footDb : T.footLocal)}</div>`
+    + state.companies.map(c => peopleList('people-' + c.code, peopleOf(c.code))).join('') + peopleList('people-all', allPeople());
   restoreForm(snap);
 }
 
@@ -831,6 +875,7 @@ document.addEventListener('click', e => {
     case 'page': view = { page: el.dataset.page, id: null, tab: 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
     case 'open': view = { page: 'detail', id: el.dataset.id, tab: DEPT_COMPANIES.includes(el.dataset.id) ? 'depts' : 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
     case 'dept-preset': return addDept(el.dataset.company, el.dataset.name);
+    case 'person-del': return mutate(el.dataset.company, c => { c.people = c.people.filter(n => n !== el.dataset.name); });
     case 'dept-move': return moveDept(el.dataset.did, Number(el.dataset.dir));
     case 'dt-open': openD.has(tid) ? openD.delete(tid) : openD.add(tid); break;
     case 'dt-done': return mutateDTask(el.dataset.did, tid, t => { t.done = !t.done; t.doneAt = t.done ? new Date().toISOString() : ''; });
@@ -897,6 +942,7 @@ document.addEventListener('keydown', e => {
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.ui) { ui[el.dataset.ui] = el.value; saveUi(); return render(); }
+  if (el.dataset.ownerFilter) { const code = el.dataset.ownerFilter; if (el.value) deptOwner[code] = el.value; else delete deptOwner[code]; return render(); }
   if (el.dataset.dname) {
     const v = el.value.trim();
     if (!v) return render();
@@ -905,7 +951,9 @@ document.addEventListener('change', e => {
   if (el.dataset.dtf) {
     const f = el.dataset.dtf, v = el.value, tid = el.dataset.tid;
     if (f === 'title' && !v.trim()) return render();
-    return mutateDTask(el.dataset.did, tid, t => { t[f] = f === 'title' ? v.trim() : v; });
+    mutateDTask(el.dataset.did, tid, t => { t[f] = f === 'title' || f === 'owner' ? v.trim() : v; });
+    if (f === 'owner') { const d = dp(el.dataset.did); if (d) rememberPerson(d.company, v.trim()); }
+    return;
   }
   if (el.dataset.tfield) {
     const f = el.dataset.tfield, v = el.value;
@@ -936,10 +984,13 @@ document.addEventListener('submit', e => {
     return addTask({ ...data, createdAt: new Date().toISOString() });
   }
   if (kind === 'dept') { clear(); return addDept(form.dataset.company, data.name); }
+  if (kind === 'person') { clear(); return rememberPerson(form.dataset.company, data.name); }
   if (kind === 'dtask') {
     if (!data.title) return;
     clear();
-    return addDTask(form.dataset.did, { title: data.title, due: data.due, level: data.level });
+    addDTask(form.dataset.did, { title: data.title, due: data.due, level: data.level, owner: data.owner });
+    const d = dp(form.dataset.did); if (d && data.owner) rememberPerson(d.company, data.owner);
+    return;
   }
   if (kind === 'ddetail') {
     if (!data.text) return;
