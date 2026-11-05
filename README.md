@@ -1,2 +1,43 @@
-# Business-Management
-Learn Business
+# 集团公司管理器
+
+一个单文件网页工具，用来跟进几家公司的状态和进展：
+
+| 代号 | 公司 | 类型 |
+|---|---|---|
+| A | Simbaplus Engineering M Sdn Bhd | 主体建筑公司 |
+| B | Move Industrial Technology Sdn Bhd | 移动出行 · 电三轮制造（创业/重启） |
+| C | Lavida Home Concepts Sdn Bhd | 室内设计（创业/重启） |
+| D | Eco Space Panel M Sdn Bhd | 建材贸易（创业/重启） |
+
+## 使用
+
+**离线 App 版（推荐，开发中）：** 放在 Firebase 上的网页 App，可以装到手机桌面，没网络也能用，联网自动同步。代码在 `web/`、`src/`，设置步骤见 [docs/SETUP.md](docs/SETUP.md)。
+
+**在线版（claude.ai）：** https://claude.ai/artifact/JATkDEEtyGnYH3BjMQzd8U
+登录 claude.ai 后打开，数据保存在云端，各设备看到同一份。
+
+**离线版：** 直接用浏览器打开 `index.html` 也能用，但数据只保存在那台设备的浏览器里。
+
+- **中文 / EN**：右上角一键切换语言，每台设备各自记住选择。
+- **总览**：到期提醒（可「完成」或「明天再提醒」）、置顶跟进事项（可直接写一句跟进记录）、四家公司卡片（阶段、健康度、待办数、长期跟进数、风险、本期重点、最近更新）。
+- **我的任务**（类似 Google Tasks）：待办和长期跟进两种类型；每项可设公司、负责人、开启时间、提醒时间、优先级、备注；★ 加星做书签，📌 置顶到总览；长期跟进有跟进记录。可按全部 / 待办 / 长期跟进 / 已加星 / 已置顶 / 已完成筛选，按公司筛选，按最新、优先级、提醒时间、开启时间排序。
+- **部门看板**（A、B、C、D 四家公司都可用，每家有各自的常用部门）：自行添加部门（如 Account Department、Project Department，也有常用部门一键添加），可改名、调整顺序、删除。每个部门下添加 task，每个 task 可设日期时间和等级：普通（灰）、重要（蓝）、着急（橙）、优先（红）；前面打勾即完成，完成后自动划线变浅。点开 task 可再添加细节（也能打勾）。未完成的 task 按等级和日期自动排序。
+- **公司详情**（A/B/C/D）：概况与 KPI、该公司的任务、进展日志、风险。
+- **阶段**：主体公司 = 稳定运营 → 优化提升 → 扩张；创业型 = 筹备 → 验证 → 起步 → 增长 → 稳定；重启型 = 盘点 → 止损 → 重组 → 重新起步 → 增长。
+- **周检视**：未来 7 天和已到期的提醒、超过 14 天没跟进的长期事项、高风险事项、过去 7 天的进展、各公司状态一览。
+- **提醒**：提醒在打开页面时显示（总览顶部和导航上的红色数字），不会推送到手机通知栏。
+- **导出 / 导入**：把数据导出成 JSON 备份文件，或从备份恢复。在线版和离线版的备份文件通用。
+
+## 离线 App 版的文件
+
+| 路径 | 用途 |
+|---|---|
+| `src/app.js` | App 逻辑（和 claude.ai 版相同的功能） |
+| `src/store.js` | Firebase 登录、离线缓存、同步 |
+| `src/firebase-config.js` | Firebase 项目配置（留空 = 本地模式） |
+| `src/sw.js` | 离线缓存（service worker） |
+| `web/` | 发布到 Firebase Hosting 的网页 |
+| `firestore.rules` | 数据库访问规则：只有名单里的邮箱能读写 |
+| `.github/workflows/deploy.yml` | 合并到 main 后自动发布 |
+
+本地测试：`npm install`，然后 `npm run build`。用 Firebase 模拟器测试时，打开网址加上 `?emulator`。

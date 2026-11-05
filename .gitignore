@@ -1,0 +1,8 @@
+node_modules/
+web/app.js
+web/app.js.map
+*.log
+.firebase/
+firebase-debug*.log
+firestore-debug.log
+web/sw.js
