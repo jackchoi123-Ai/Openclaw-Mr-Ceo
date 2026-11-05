@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>集团公司管理器</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
+    --accent: #2f5bd3; --accent-soft: #e8eefc;
+    --green: #1f9d55; --green-soft: #e3f5ea; --yellow: #c98a00; --yellow-soft: #fff3d6;
+    --red: #d1393a; --red-soft: #fde6e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151c; --panel: #1b1f29; --ink: #e8ebf2; --muted: #9098aa; --line: #2c3240;
+      --accent: #7c9cff; --accent-soft: #232c45;
+      --green: #4cc27e; --green-soft: #183326; --yellow: #e8b33c; --yellow-soft: #3a2f14;
+      --red: #ff6b6b; --red-soft: #3d1d1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 18px; margin: 0; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 2px 6px; }
+  button.ghost:hover { color: var(--red); }
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 60px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .company-card { cursor: pointer; display: flex; flex-direction: column; gap: 10px; border-top: 4px solid var(--line); }
+  .company-card:hover { border-color: var(--accent); }
+  .company-card.h-green { border-top-color: var(--green); }
+  .company-card.h-yellow { border-top-color: var(--yellow); }
+  .company-card.h-red { border-top-color: var(--red); }
+  .code { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 700; margin-right: 8px; flex: none; }
+  .title-row { display: flex; align-items: center; }
+  .cname { font-weight: 600; line-height: 1.25; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg);
+    border: 1px solid var(--line); color: var(--muted); margin-right: 4px; white-space: nowrap; }
+  .health { font-size: 12px; padding: 1px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .health.green { background: var(--green-soft); color: var(--green); }
+  .health.yellow { background: var(--yellow-soft); color: var(--yellow); }
+  .health.red { background: var(--red-soft); color: var(--red); }
+  .bar { height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+  .stats b { display: block; font-size: 18px; }
+  .stats span { font-size: 12px; color: var(--muted); }
+  .warn { color: var(--red); }
+  h2 { font-size: 17px; margin: 24px 0 10px; }
+  h3 { font-size: 15px; margin: 0 0 10px; }
+  .pipeline { display: flex; gap: 3px; margin: 6px 0; }
+  .pipeline span { flex: 1; min-width: 0; text-align: center; font-size: 12px; padding: 4px 1px; white-space: nowrap; overflow: hidden; border-radius: 6px;
+    background: var(--bg); color: var(--muted); cursor: pointer; border: 1px solid transparent; }
+  .pipeline span.done { background: var(--accent-soft); color: var(--accent); }
+  .pipeline span.now { background: var(--accent); color: #fff; font-weight: 600; }
+  .detail-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+  input, select, textarea { font: inherit; width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink); }
+  textarea { min-height: 70px; resize: vertical; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 1; min-width: 110px; }
+  .row > button, .row > .narrow { flex: none; min-width: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  tr.done td { color: var(--muted); text-decoration: line-through; }
+  .list-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .list-item:last-child { border-bottom: 0; }
+  .list-item .grow { flex: 1; min-width: 0; }
+  .date { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+  .pri-high { color: var(--red); font-weight: 600; }
+  .pri-mid { color: var(--yellow); }
+  .pri-low { color: var(--muted); }
+  .table-wrap { overflow-x: auto; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 30px; text-align: center; }
+  input[type=checkbox] { width: auto; margin-top: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏢 集团公司管理器</h1>
+  <nav id="nav"></nav>
+</header>
+<main id="app"></main>
+<input type="file" id="importFile" accept="application/json" hidden>
+
+<script>
+/* ============ 配置 ============ */
+const STORAGE_KEY = 'company-manager-v1';
+
+const TYPES = { core: '主体公司', startup: '创业型', restart: '重启型' };
+const HEALTH = { green: '🟢 正常', yellow: '🟡 关注', red: '🔴 预警' };
+const STAGES = {
+  core:    ['稳定运营', '优化提升', '扩张'],
+  startup: ['筹备', '验证', '起步', '增长', '稳定'],
+  restart: ['盘点', '止损', '重组', '重新起步', '增长'],
+};
+const PRI = { high: '高', mid: '中', low: '低' };
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const today = () => new Date().toISOString().slice(0, 10);
+
+function seed() {
+  const c = (code, name, cn, type, industry) => ({
+    id: code, code, name, cn, type, industry, stage: 0, health: 'green',
+    owner: '', focus: '', kpis: [], milestones: [], tasks: [], logs: [], risks: [],
+  });
+  return {
+    version: 1,
+    companies: [
+      c('A', 'Simbaplus Engineering M Sdn Bhd', '主体建筑公司', 'core', '建筑工程'),
+      c('B', 'Move Industrial Technology Sdn Bhd', '移动出行 · 电三轮制造', 'startup', '电动车制造'),
+      c('C', 'Lavida Home Concepts Sdn Bhd', '室内设计公司', 'startup', '室内设计'),
+      c('D', 'Eco Space Panel M Sdn Bhd', '建材贸易公司', 'startup', '建材贸易'),
+    ],
+  };
+}
+
+/* ============ 数据 ============ */
+let db;
+try { db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || seed(); } catch { db = seed(); }
+const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch {} };
+const co = id => db.companies.find(x => x.id === id);
+
+let view = { page: 'overview', id: null, tab: 'overview' };
+
+/* ============ 工具 ============ */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const isOverdue = t => !t.done && t.due && t.due < today();
+const daysAgo = d => d ? Math.floor((Date.parse(today()) - Date.parse(d)) / 864e5) : null;
+
+function summary(c) {
+  const ms = c.milestones, done = ms.filter(m => m.done).length;
+  const openTasks = c.tasks.filter(t => !t.done);
+  const lastLog = c.logs.map(l => l.date).sort().pop();
+  return {
+    progress: ms.length ? Math.round(done / ms.length * 100) : 0,
+    msText: `${done}/${ms.length}`,
+    open: openTasks.length,
+    overdue: openTasks.filter(isOverdue).length,
+    risks: c.risks.filter(r => !r.closed).length,
+    lastLog, stale: lastLog ? daysAgo(lastLog) : null,
+    nextMs: ms.filter(m => !m.done).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'))[0],
+  };
+}
+
+function pipeline(c, clickable) {
+  return `<div class="pipeline">${STAGES[c.type].map((s, i) =>
+    `<span class="${i < c.stage ? 'done' : i === c.stage ? 'now' : ''}" ${clickable ? `data-act="stage" data-i="${i}" title="设为当前阶段"` : ''}>${esc(s)}</span>`
+  ).join('')}</div>`;
+}
+
+/* ============ 页面：总览 ============ */
+function renderOverview() {
+  const all = db.companies.map(c => ({ c, s: summary(c) }));
+  const totalOverdue = all.reduce((n, x) => n + x.s.overdue, 0);
+  return `
+  <div class="grid">${all.map(({ c, s }) => `
+    <div class="card company-card h-${c.health}" data-act="open" data-id="${c.id}">
+      <div class="title-row"><span class="code">${esc(c.code)}</span>
+        <div><div class="cname">${esc(c.name)}</div><div class="sub">${esc(c.cn)}</div></div></div>
+      <div><span class="tag">${TYPES[c.type]}</span><span class="health ${c.health}">${HEALTH[c.health]}</span></div>
+      ${pipeline(c)}
+      <div><div class="row sub" style="justify-content:space-between"><span>里程碑 ${s.msText}</span><span>${s.progress}%</span></div>
+        <div class="bar"><i style="width:${s.progress}%"></i></div></div>
+      <div class="stats">
+        <div><b>${s.open}</b><span>待办</span></div>
+        <div><b class="${s.overdue ? 'warn' : ''}">${s.overdue}</b><span>逾期</span></div>
+        <div><b class="${s.risks ? 'warn' : ''}">${s.risks}</b><span>风险</span></div>
+      </div>
+      <div class="sub">🎯 ${c.focus ? esc(c.focus) : '<i>未设定本期重点</i>'}</div>
+      <div class="sub">⏭ 下个里程碑：${s.nextMs ? esc(s.nextMs.title) + (s.nextMs.due ? ` (${s.nextMs.due})` : '') : '—'}</div>
+      <div class="sub ${s.stale === null || s.stale > 14 ? 'warn' : ''}">📝 最近更新：${s.lastLog ? `${s.lastLog}（${s.stale} 天前）` : '暂无记录'}</div>
+    </div>`).join('')}
+  </div>
+  ${totalOverdue ? `<h2>⚠️ 逾期待办（${totalOverdue}）</h2>${crossTaskTable(all.flatMap(({ c }) => c.tasks.filter(isOverdue).map(t => ({ c, t }))))}` : ''}
+  `;
+}
+
+function crossTaskTable(rows) {
+  if (!rows.length) return '<div class="card empty">没有记录</div>';
+  rows.sort((a, b) => (a.t.due || '9').localeCompare(b.t.due || '9'));
+  return `<div class="card table-wrap"><table><tr><th>公司</th><th>事项</th><th>负责人</th><th>截止</th><th>优先级</th><th></th></tr>
+    ${rows.map(({ c, t }) => `<tr><td><span class="code">${esc(c.code)}</span></td><td>${esc(t.title)}</td><td>${esc(t.owner)}</td>
+      <td class="${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td><td class="pri-${t.priority}">${PRI[t.priority]}</td>
+      <td><button data-act="toggle-task" data-id="${c.id}" data-item="${t.id}">完成</button></td></tr>`).join('')}
+  </table></div>`;
+}
+
+/* ============ 页面：周检视 ============ */
+function renderReview() {
+  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const logs = db.companies.flatMap(c => c.logs.filter(l => l.date >= weekAgo).map(l => ({ c, l })))
+    .sort((a, b) => b.l.date.localeCompare(a.l.date));
+  const upcoming = db.companies.flatMap(c => c.tasks.filter(t => !t.done && t.due && t.due <= in7).map(t => ({ c, t })));
+  const risks = db.companies.flatMap(c => c.risks.filter(r => !r.closed && r.level === 'high').map(r => ({ c, r })));
+  return `
+  <h2>📅 本周要完成 / 已逾期（截至 ${in7}）</h2>${crossTaskTable(upcoming)}
+  <h2>🔥 高风险事项</h2>
+  <div class="card">${risks.length ? risks.map(({ c, r }) => `<div class="list-item"><span class="code">${esc(c.code)}</span>
+    <div class="grow"><div>${esc(r.text)}</div><div class="sub">应对：${esc(r.plan || '未定')}</div></div></div>`).join('') : '<div class="empty">无高风险</div>'}</div>
+  <h2>📝 过去 7 天进展</h2>
+  <div class="card">${logs.length ? logs.map(({ c, l }) => `<div class="list-item"><span class="code">${esc(c.code)}</span>
+    <div class="grow">${esc(l.text).replace(/\n/g, '<br>')}</div><span class="date">${l.date}</span></div>`).join('') : '<div class="empty">这周还没有进展记录</div>'}</div>
+  <h2>📊 各公司状态一览</h2>
+  <div class="card table-wrap"><table><tr><th>公司</th><th>类型</th><th>阶段</th><th>健康度</th><th>里程碑</th><th>逾期</th><th>最近更新</th></tr>
+    ${db.companies.map(c => { const s = summary(c); return `<tr><td><b>${esc(c.code)}</b> ${esc(c.cn)}</td><td>${TYPES[c.type]}</td>
+      <td>${esc(STAGES[c.type][c.stage])}</td><td><span class="health ${c.health}">${HEALTH[c.health]}</span></td>
+      <td>${s.progress}%</td><td class="${s.overdue ? 'warn' : ''}">${s.overdue}</td><td>${s.lastLog || '—'}</td></tr>`; }).join('')}
+  </table></div>`;
+}
+
+/* ============ 页面：公司详情 ============ */
+function renderDetail() {
+  const c = co(view.id);
+  const s = summary(c);
+  const tabs = { overview: '概况', milestones: `里程碑 (${s.msText})`, tasks: `待办 (${s.open})`, logs: `进展日志 (${c.logs.length})`, risks: `风险 (${s.risks})` };
+  return `
+  <div class="card">
+    <div class="detail-head">
+      <div class="title-row"><span class="code">${esc(c.code)}</span>
+        <div><div class="cname" style="font-size:17px">${esc(c.name)}</div><div class="sub">${esc(c.cn)} · ${esc(c.industry)}</div></div></div>
+      <div><span class="tag">${TYPES[c.type]}</span><span class="health ${c.health}">${HEALTH[c.health]}</span></div>
+    </div>
+    ${pipeline(c, true)}
+    <div class="sub">点击上方阶段可切换当前阶段</div>
+  </div>
+  <div class="tabs">${Object.entries(tabs).map(([k, v]) => `<button class="${view.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${v}</button>`).join('')}</div>
+  ${({ overview: tabOverview, milestones: tabMilestones, tasks: tabTasks, logs: tabLogs, risks: tabRisks })[view.tab](c)}`;
+}
+
+function tabOverview(c) {
+  return `<div class="two">
+    <div class="card"><h3>基本信息</h3>
+      <label>公司全名</label><input data-field="name" value="${esc(c.name)}">
+      <label>简称 / 说明</label><input data-field="cn" value="${esc(c.cn)}">
+      <label>行业</label><input data-field="industry" value="${esc(c.industry)}">
+      <div class="row">
+        <div><label>类型</label><select data-field="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${c.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div><label>健康度</label><select data-field="health">${Object.entries(HEALTH).map(([k, v]) => `<option value="${k}" ${c.health === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      </div>
+      <label>负责人</label><input data-field="owner" value="${esc(c.owner)}" placeholder="例如：总经理姓名">
+      <label>本期重点（一句话）</label><textarea data-field="focus" placeholder="这个月/季度最重要的一件事">${esc(c.focus)}</textarea>
+    </div>
+    <div class="card"><h3>关键指标 KPI</h3>
+      ${c.kpis.length ? `<div class="table-wrap"><table><tr><th>指标</th><th>目标</th><th>实际</th><th>达成</th><th></th></tr>
+        ${c.kpis.map(k => { const pct = Number(k.target) ? Math.round(Number(k.actual) / Number(k.target) * 100) : null; return `<tr>
+          <td>${esc(k.name)}</td>
+          <td>${esc(k.target)} ${esc(k.unit)}</td>
+          <td><input class="narrow" style="width:90px" data-kpi="${k.id}" value="${esc(k.actual)}"></td>
+          <td class="${pct !== null && pct < 70 ? 'warn' : ''}">${pct === null ? '—' : pct + '%'}</td>
+          <td><button class="ghost" data-act="del" data-list="kpis" data-item="${k.id}">✕</button></td></tr>`; }).join('')}
+      </table></div>` : '<div class="empty">还没有指标，例如：月营业额、在手合同额、订单数、现金余额</div>'}
+      <form data-form="kpis" class="row" style="margin-top:10px">
+        <input name="name" placeholder="指标名称" required>
+        <input name="target" placeholder="目标" class="narrow" style="width:80px">
+        <input name="unit" placeholder="单位" class="narrow" style="width:70px">
+        <button class="primary">添加</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function tabMilestones(c) {
+  const ms = [...c.milestones].sort((a, b) => (a.done - b.done) || (a.due || '9').localeCompare(b.due || '9'));
+  return `<div class="card">
+    <form data-form="milestones" class="row">
+      <input name="title" placeholder="里程碑，例如：取得营业执照 / 第一台样车 / 首单签约" required>
+      <input name="due" type="date" class="narrow" style="width:160px">
+      <button class="primary">添加</button>
+    </form>
+    ${ms.length ? ms.map(m => `<div class="list-item">
+      <input type="checkbox" data-act="toggle" data-list="milestones" data-item="${m.id}" ${m.done ? 'checked' : ''}>
+      <div class="grow" style="${m.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.title)}</div>
+      <span class="date ${isOverdue(m) ? 'warn' : ''}">${m.due || ''}</span>
+      <button class="ghost" data-act="del" data-list="milestones" data-item="${m.id}">✕</button></div>`).join('') : '<div class="empty">还没有里程碑</div>'}
+  </div>`;
+}
+
+function tabTasks(c) {
+  const ts = [...c.tasks].sort((a, b) => (a.done - b.done) || (a.due || '9').localeCompare(b.due || '9'));
+  return `<div class="card">
+    <form data-form="tasks" class="row">
+      <input name="title" placeholder="待办事项" required style="flex:3">
+      <input name="owner" placeholder="负责人">
+      <input name="due" type="date" class="narrow" style="width:160px">
+      <select name="priority" class="narrow" style="width:80px"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
+      <button class="primary">添加</button>
+    </form>
+    ${ts.length ? `<div class="table-wrap"><table><tr><th></th><th>事项</th><th>负责人</th><th>截止</th><th>优先级</th><th></th></tr>
+      ${ts.map(t => `<tr class="${t.done ? 'done' : ''}">
+        <td><input type="checkbox" data-act="toggle" data-list="tasks" data-item="${t.id}" ${t.done ? 'checked' : ''}></td>
+        <td>${esc(t.title)}</td><td>${esc(t.owner)}</td>
+        <td class="${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td>
+        <td class="pri-${t.priority}">${PRI[t.priority]}</td>
+        <td><button class="ghost" data-act="del" data-list="tasks" data-item="${t.id}">✕</button></td></tr>`).join('')}
+    </table></div>` : '<div class="empty">还没有待办</div>'}
+  </div>`;
+}
+
+function tabLogs(c) {
+  const ls = [...c.logs].sort((a, b) => b.date.localeCompare(a.date));
+  return `<div class="card">
+    <form data-form="logs">
+      <div class="row"><input name="date" type="date" value="${today()}" class="narrow" style="width:160px"></div>
+      <label>进展 / 会议纪要 / 决定</label>
+      <textarea name="text" required placeholder="这次有什么进展？卡在哪里？做了什么决定？"></textarea>
+      <div style="margin-top:8px"><button class="primary">记录</button></div>
+    </form>
+  </div>
+  <div class="card" style="margin-top:14px">
+    ${ls.length ? ls.map(l => `<div class="list-item"><span class="date">${l.date}</span>
+      <div class="grow">${esc(l.text).replace(/\n/g, '<br>')}</div>
+      <button class="ghost" data-act="del" data-list="logs" data-item="${l.id}">✕</button></div>`).join('') : '<div class="empty">还没有进展记录</div>'}
+  </div>`;
+}
+
+function tabRisks(c) {
+  const rs = [...c.risks].sort((a, b) => a.closed - b.closed);
+  const lv = { high: '高', mid: '中', low: '低' };
+  return `<div class="card">
+    <form data-form="risks">
+      <div class="row">
+        <input name="text" placeholder="风险 / 问题，例如：现金流只够 3 个月" required style="flex:3">
+        <select name="level" class="narrow" style="width:80px"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
+      </div>
+      <div class="row" style="margin-top:8px"><input name="plan" placeholder="应对措施"><button class="primary">添加</button></div>
+    </form>
+    ${rs.length ? rs.map(r => `<div class="list-item">
+      <input type="checkbox" title="已解决" data-act="toggle-risk" data-item="${r.id}" ${r.closed ? 'checked' : ''}>
+      <div class="grow" style="${r.closed ? 'text-decoration:line-through;color:var(--muted)' : ''}">
+        <div><span class="pri-${r.level}">[${lv[r.level]}]</span> ${esc(r.text)}</div>
+        <div class="sub">应对：${esc(r.plan || '未定')}</div></div>
+      <button class="ghost" data-act="del" data-list="risks" data-item="${r.id}">✕</button></div>`).join('') : '<div class="empty">没有登记风险</div>'}
+  </div>`;
+}
+
+/* ============ 渲染 & 事件 ============ */
+function render() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = `
+    <button class="${view.page === 'overview' ? 'active' : ''}" data-act="page" data-page="overview">总览</button>
+    <button class="${view.page === 'review' ? 'active' : ''}" data-act="page" data-page="review">周检视</button>
+    ${db.companies.map(c => `<button class="${view.page === 'detail' && view.id === c.id ? 'active' : ''}" data-act="open" data-id="${c.id}">${esc(c.code)}</button>`).join('')}
+    <button data-act="export" title="下载备份文件">导出</button>
+    <button data-act="import" title="从备份文件恢复">导入</button>`;
+  const app = document.getElementById('app');
+  app.innerHTML = (view.page === 'overview' ? renderOverview() : view.page === 'review' ? renderReview() : renderDetail())
+    + `<div class="note">数据保存在本浏览器中。换电脑或清理浏览器前，请先点「导出」备份。</div>`;
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  const c = view.id ? co(view.id) : null;
+  if (act === 'page') view = { page: el.dataset.page, id: null, tab: 'overview' };
+  else if (act === 'open') view = { page: 'detail', id: el.dataset.id, tab: 'overview' };
+  else if (act === 'tab') view.tab = el.dataset.tab;
+  else if (act === 'stage') { c.stage = Number(el.dataset.i); save(); }
+  else if (act === 'toggle') { const it = c[el.dataset.list].find(x => x.id === el.dataset.item); it.done = !it.done; save(); }
+  else if (act === 'toggle-risk') { const it = c.risks.find(x => x.id === el.dataset.item); it.closed = !it.closed; save(); }
+  else if (act === 'toggle-task') { const t = co(el.dataset.id).tasks.find(x => x.id === el.dataset.item); t.done = true; save(); }
+  else if (act === 'del') { if (!confirm('确定删除？')) return; c[el.dataset.list] = c[el.dataset.list].filter(x => x.id !== el.dataset.item); save(); }
+  else if (act === 'export') return exportData();
+  else if (act === 'import') return document.getElementById('importFile').click();
+  else return;
+  render();
+});
+
+document.addEventListener('change', e => {
+  const el = e.target;
+  const c = view.id ? co(view.id) : null;
+  if (!c) return;
+  if (el.dataset.field) {
+    c[el.dataset.field] = el.value;
+    if (el.dataset.field === 'type') c.stage = Math.min(c.stage, STAGES[c.type].length - 1);
+    save(); render();
+  } else if (el.dataset.kpi) {
+    c.kpis.find(k => k.id === el.dataset.kpi).actual = el.value; save(); render();
+  }
+});
+
+document.addEventListener('submit', e => {
+  const form = e.target.closest('[data-form]');
+  if (!form) return;
+  e.preventDefault();
+  const c = co(view.id);
+  const item = { id: uid(), ...Object.fromEntries(new FormData(form)) };
+  if (form.dataset.form === 'kpis') item.actual = '';
+  if (['milestones', 'tasks'].includes(form.dataset.form)) item.done = false;
+  if (form.dataset.form === 'risks') item.closed = false;
+  c[form.dataset.form].push(item);
+  save(); render();
+});
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `公司管理器备份-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('importFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.companies)) throw new Error();
+    if (!confirm('导入会覆盖当前所有数据，确定吗？')) return;
+    db = data; save(); view = { page: 'overview', id: null, tab: 'overview' }; render();
+  } catch { alert('文件格式不正确'); }
+  e.target.value = '';
+});
+
+render();
+</script>
+</body>
+</html>
