@@ -336,9 +336,14 @@ const TYPE_KEYS = ['core', 'startup', 'restart'], HEALTH_KEYS = ['green', 'yello
 const STAGE_COUNT = { core: 3, startup: 5, restart: 5 };
 const PRI_KEYS = ['high', 'mid', 'low', 'none'], PRI_RANK = { high: 0, mid: 1, low: 2, none: 3 };
 const LISTS = ['kpis', 'logs', 'risks'];
-const DEPT_COMPANIES = ['A'];   // companies that use the department board (Simbaplus first)
+const DEPT_COMPANIES = ['A', 'B', 'C', 'D'];   // companies that use the department board
 const LEVELS = ['normal', 'important', 'urgent', 'priority'], LEVEL_RANK = { priority: 0, urgent: 1, important: 2, normal: 3 };
-const DEPT_PRESETS = ['Account Department', 'Project Department', 'Purchasing Department', 'HR & Admin Department', 'Safety (HSE) Department', 'Tender & QS Department'];
+const DEPT_PRESETS = {
+  A: ['Account Department', 'Project Department', 'Purchasing Department', 'HR & Admin Department', 'Safety (HSE) Department', 'Tender & QS Department'],
+  B: ['Account Department', 'R&D / Engineering Department', 'Production Department', 'Purchasing Department', 'Sales & Marketing Department', 'Licensing & Compliance Department', 'HR & Admin Department'],
+  C: ['Account Department', 'Design Department', 'Project Department', 'Sales & Marketing Department', 'Purchasing Department', 'HR & Admin Department'],
+  D: ['Account Department', 'Sales Department', 'Purchasing Department', 'Logistics & Warehouse Department', 'Marketing Department', 'HR & Admin Department'],
+};
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const pad = n => String(n).padStart(2, '0');
@@ -796,7 +801,7 @@ function tabDepts(c) {
       <input name="name" id="nd-name" required placeholder="${esc(T.newDept)}" aria-label="${esc(T.addDept)}">
       <button class="primary">${esc(T.addDept)}</button>
     </form>
-    ${(() => { const have = new Set(list.map(d => d.name.toLowerCase())); const left = DEPT_PRESETS.filter(p => !have.has(p.toLowerCase()));
+    ${(() => { const have = new Set(list.map(d => d.name.toLowerCase())); const left = (DEPT_PRESETS[c.code] || DEPT_PRESETS.A).filter(p => !have.has(p.toLowerCase()));
       return left.length ? `<div class="dept-presets"><span class="sub">${esc(T.presets)}</span>${left.map(p => `<button class="small" data-act="dept-preset" data-company="${esc(c.code)}" data-name="${esc(p)}">+ ${esc(p)}</button>`).join('')}</div>` : ''; })()}
   </div>` : ''}
   ${list.length ? `<div class="dept-board">${list.map((d, i) => deptCard(d, i, list.length)).join('')}</div>` : `<div class="card empty">${esc(T.deptEmpty)}</div>`}`;
