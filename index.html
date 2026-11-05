@@ -10,6 +10,8 @@
     --accent: #24548f; --accent-ink: #ffffff; --accent-soft: #e6edf6;
     --green: #1d8a4e; --green-soft: #e2f3e8; --yellow: #a86f00; --yellow-soft: #fbf0d4;
     --red: #c43535; --red-soft: #fbe5e3; --star: #d99a00;
+    --lv-normal: #7a847f; --lv-normal-soft: #eceeeb; --lv-important: #2f6fd0; --lv-important-soft: #e3edfb;
+    --lv-urgent: #d0700f; --lv-urgent-soft: #fdeedd; --lv-priority: #c8302f; --lv-priority-soft: #fbe3e2;
     --f-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     --f-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
     --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -20,6 +22,8 @@
       --accent: #7fa8e0; --accent-ink: #0f1a2a; --accent-soft: #1f2c3e;
       --green: #55c587; --green-soft: #173226; --yellow: #e5b54a; --yellow-soft: #3a2f13;
       --red: #ff7a72; --red-soft: #3e1d1c; --star: #f2c14e; color-scheme: dark;
+      --lv-normal: #9aa4a0; --lv-normal-soft: #262c2a; --lv-important: #79a8f0; --lv-important-soft: #1c2a40;
+      --lv-urgent: #f0a050; --lv-urgent-soft: #3a2814; --lv-priority: #ff7a72; --lv-priority-soft: #3e1d1c;
     }
   }
   :root[data-theme="dark"] {
@@ -27,6 +31,8 @@
     --accent: #7fa8e0; --accent-ink: #0f1a2a; --accent-soft: #1f2c3e;
     --green: #55c587; --green-soft: #173226; --yellow: #e5b54a; --yellow-soft: #3a2f13;
     --red: #ff7a72; --red-soft: #3e1d1c; --star: #f2c14e; color-scheme: dark;
+    --lv-normal: #9aa4a0; --lv-normal-soft: #262c2a; --lv-important: #79a8f0; --lv-important-soft: #1c2a40;
+    --lv-urgent: #f0a050; --lv-urgent-soft: #3a2814; --lv-priority: #ff7a72; --lv-priority-soft: #3e1d1c;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
@@ -161,6 +167,58 @@
   input[type=checkbox] { width: 18px; height: 18px; margin-top: 3px; flex: none; accent-color: var(--accent); }
   .add-card { margin-bottom: 14px; }
   .add-card .row label { margin: 0 0 3px; font-size: 12px; }
+
+  /* departments board */
+  .dept-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .dept-summary .pill { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: 13px; color: var(--muted); }
+  .dept-summary .pill b { font: 500 16px var(--f-mono); color: var(--ink); margin-right: 4px; }
+  .dept-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+  @media (max-width: 400px) { .dept-board { grid-template-columns: 1fr; } }
+  .dept { padding: 0; overflow: hidden; }
+  .dept-head { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--accent-soft); }
+  .dept-name { flex: 1; min-width: 0; font: 700 15px var(--f-body); color: var(--ink); background: transparent !important; border: 1px solid transparent; padding: 4px 6px; border-radius: 6px; }
+  .dept-name:hover, .dept-name:focus { border-color: var(--line); background: var(--panel) !important; }
+  .dept-count { font: 500 12px var(--f-mono); color: var(--accent); white-space: nowrap; }
+  .dept-body { padding: 8px 12px 12px; }
+  .dept-add { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); margin-bottom: 4px; }
+  .dept-add input[name=title] { flex: 1 1 100%; }
+  .dept-add input, .dept-add select { font-size: 14px; padding: 5px 8px; }
+  .dept-add input[type=datetime-local] { flex: 1 1 170px; }
+  .dept-add select { flex: 0 1 90px; }
+  .dtask { border-left: 4px solid var(--lv-normal); border-radius: 6px; margin-top: 8px; background: var(--bg); }
+  .dtask.lv-important { border-left-color: var(--lv-important); }
+  .dtask.lv-urgent { border-left-color: var(--lv-urgent); }
+  .dtask.lv-priority { border-left-color: var(--lv-priority); }
+  .dtask-row { display: flex; gap: 8px; align-items: flex-start; padding: 8px 8px 8px 6px; }
+  .dtask-row input[type=checkbox], .ddet input[type=checkbox] { width: 20px; height: 20px; margin: 1px 0 0; cursor: pointer; }
+  .dtask-main { flex: 1; min-width: 0; cursor: pointer; }
+  .dtask-title { overflow-wrap: anywhere; font-size: 14px; }
+  .dtask-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 3px; font-size: 12px; color: var(--muted); align-items: center; }
+  .dtask.is-done .dtask-title, .ddet.is-done .ddet-text { text-decoration: line-through; }
+  .dtask.is-done .dtask-row, .ddet.is-done { opacity: .5; }
+  .lv { font-size: 11px; font-weight: 500; padding: 0 7px; border-radius: 999px; white-space: nowrap; line-height: 18px; }
+  .lv.normal { background: var(--lv-normal-soft); color: var(--lv-normal); }
+  .lv.important { background: var(--lv-important-soft); color: var(--lv-important); }
+  .lv.urgent { background: var(--lv-urgent-soft); color: var(--lv-urgent); }
+  .lv.priority { background: var(--lv-priority-soft); color: var(--lv-priority); }
+  .chev { color: var(--muted); font-size: 12px; transition: transform .15s; display: inline-block; }
+  .chev.open { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+  .dtask-detail { padding: 0 8px 10px 34px; display: grid; gap: 6px; }
+  .dtask-edit { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dtask-edit input, .dtask-edit select { font-size: 14px; padding: 5px 8px; background: var(--panel) !important; }
+  .dtask-edit input[data-dtf=title] { flex: 1 1 100%; }
+  .dtask-edit input[type=datetime-local] { flex: 1 1 170px; }
+  .dtask-edit select { flex: 0 1 90px; }
+  .ddet { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 5px 0; border-top: 1px dashed var(--line); }
+  .ddet-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .ddet-form { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ddet-form input { font-size: 13px; padding: 4px 8px; background: var(--panel) !important; }
+  .ddet-form input[name=text] { flex: 1 1 160px; }
+  .ddet-form input[type=date] { flex: 0 1 150px; }
+  .dept-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .new-dept { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .new-dept input { flex: 1 1 220px; }
 </style>
 
 <header><div class="bar-inner">
@@ -212,6 +270,13 @@ const I18N = {
     errConn: '数据连接中断，请刷新页面。', errExport: '导出没有成功，请稍后再试。', errFile: '这个文件不是管理器的备份文件，请选择「导出」得到的 .json 文件。',
     importAsk: (a, b) => `导入备份：${a} 家公司、${b} 个任务，会覆盖同名的当前数据。`, importYes: '确认导入', cancel: '取消',
     footDb: '数据自动保存，手机、平板、电脑同步。建议每月「导出」一次做备份。', footLocal: '数据保存在本浏览器中，请定期「导出」备份。',
+    tabDepts: '部门', levels: { normal: '普通', important: '重要', urgent: '着急', priority: '优先' },
+    newDept: '新部门名称，例如：Account Department', addDept: '添加部门', presets: '快速添加：',
+    deptEmpty: '还没有部门。在上面输入名称添加，或点下面的常用部门。',
+    deptTaskPh: '添加 task…', deptNoTasks: '这个部门还没有 task', details: '细节', detailPh: '添加细节…', noDetails: '还没有细节',
+    moveL: '往前移', moveR: '往后移', delDept: '删除部门', expand: '展开 / 收起',
+    sumOpen: '未完成', sumOverdue: '已逾期', sumDone: '已完成', deptTasks: '部门 task',
+    dueLabel: '日期时间', levelLabel: '等级',
   },
   en: {
     app: 'Group Company Manager', overview: 'Dashboard', mytasks: 'My Tasks', review: 'Weekly Review', exp: 'Export', imp: 'Import', langBtn: '中文',
@@ -252,6 +317,13 @@ const I18N = {
     errConn: 'The data connection dropped. Refresh the page.', errExport: 'Export did not finish. Try again shortly.', errFile: 'This is not a manager backup. Choose a .json file made with Export.',
     importAsk: (a, b) => `Import backup: ${a} companies and ${b} tasks. Matching current data will be replaced.`, importYes: 'Import', cancel: 'Cancel',
     footDb: 'Saved automatically and synced across phone, tablet and computer. Export a backup once a month.', footLocal: 'Data is saved in this browser. Export a backup regularly.',
+    tabDepts: 'Departments', levels: { normal: 'Normal', important: 'Important', urgent: 'Urgent', priority: 'Priority' },
+    newDept: 'New department, e.g. Account Department', addDept: 'Add department', presets: 'Quick add:',
+    deptEmpty: 'No departments yet. Type a name above, or tap a common one below.',
+    deptTaskPh: 'Add a task…', deptNoTasks: 'No tasks in this department yet', details: 'Details', detailPh: 'Add a detail…', noDetails: 'No details yet',
+    moveL: 'Move earlier', moveR: 'Move later', delDept: 'Delete department', expand: 'Expand / collapse',
+    sumOpen: 'Open', sumOverdue: 'Overdue', sumDone: 'Done', deptTasks: 'Department tasks',
+    dueLabel: 'Date & time', levelLabel: 'Level',
   },
 };
 let lang = 'zh';
@@ -264,6 +336,9 @@ const TYPE_KEYS = ['core', 'startup', 'restart'], HEALTH_KEYS = ['green', 'yello
 const STAGE_COUNT = { core: 3, startup: 5, restart: 5 };
 const PRI_KEYS = ['high', 'mid', 'low', 'none'], PRI_RANK = { high: 0, mid: 1, low: 2, none: 3 };
 const LISTS = ['kpis', 'logs', 'risks'];
+const DEPT_COMPANIES = ['A'];   // companies that use the department board (Simbaplus first)
+const LEVELS = ['normal', 'important', 'urgent', 'priority'], LEVEL_RANK = { priority: 0, urgent: 1, important: 2, normal: 3 };
+const DEPT_PRESETS = ['Account Department', 'Project Department', 'Purchasing Department', 'HR & Admin Department', 'Safety (HSE) Department', 'Tender & QS Department'];
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const pad = n => String(n).padStart(2, '0');
@@ -282,7 +357,7 @@ function localSeed() {
 }
 
 /* ===================== 状态 ===================== */
-const state = { mode: 'loading', companies: [], tasks: [], canWrite: true, slow: false, error: '', pendingDel: null, pendingImport: null };
+const state = { mode: 'loading', companies: [], tasks: [], depts: [], canWrite: true, slow: false, error: '', pendingDel: null, pendingImport: null };
 let view = { page: 'overview', id: null, tab: 'info' };
 const ui = { filter: 'all', company: '', sort: 'created', showDone: false, openTask: null };
 try { Object.assign(ui, JSON.parse(localStorage.getItem('cm-ui') || '{}'), { openTask: null }); } catch {}
@@ -307,6 +382,16 @@ const normTask = t => ({
 });
 const setCompanies = list => { state.companies = list.map(normCompany).sort((a, b) => String(a.code).localeCompare(String(b.code))); };
 const setTasks = list => { state.tasks = list.map(normTask); };
+const normDetail = d => ({ id: d.id || uid(), text: d.text || '', date: d.date || '', done: !!d.done });
+const normDTask = t => ({
+  id: t.id || uid(), title: t.title || '', due: t.due || '', level: LEVELS.includes(t.level) ? t.level : 'normal',
+  done: !!t.done, doneAt: t.doneAt || '', createdAt: t.createdAt || new Date().toISOString(),
+  details: Array.isArray(t.details) ? t.details.map(normDetail) : [],
+});
+const normDept = d => ({ id: d.id || uid(), company: d.company || 'A', name: d.name || '', order: Number(d.order) || 0, tasks: Array.isArray(d.tasks) ? d.tasks.map(normDTask) : [] });
+const setDepts = list => { state.depts = list.map(normDept).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name)); };
+const dp = id => state.depts.find(x => x.id === id);
+const deptsOf = code => state.depts.filter(d => d.company === code);
 const co = code => state.companies.find(x => x.code === code);
 const tk = id => state.tasks.find(x => x.id === id);
 
@@ -319,7 +404,7 @@ function liftCompanyTasks(companies) {
 
 /* ---- writes: one in flight per document, latest state wins ---- */
 const writeQ = {};
-function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ companies: state.companies, tasks: state.tasks })); } catch {} }
+function saveLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ companies: state.companies, tasks: state.tasks, depts: state.depts })); } catch {} }
 function queueWrite(coll, id, body) {
   if (state.mode === 'local') return saveLocal();
   if (state.mode !== 'db') return;
@@ -363,6 +448,37 @@ function addTask(t) {
   const task = normTask(t);
   state.tasks.push(task);
   queueWrite('mytasks', task.id, taskBody(task));
+  render();
+}
+const deptBody = d => { const { id, ...body } = d; return body; };
+function mutateDept(id, fn) {
+  const d = dp(id);
+  if (!d || !state.canWrite) return;
+  fn(d);
+  queueWrite('departments', d.id, deptBody(d));
+  render();
+}
+function addDept(company, name) {
+  if (!state.canWrite || !name) return;
+  const mine = deptsOf(company);
+  const d = normDept({ company, name, order: mine.length ? Math.max(...mine.map(x => x.order)) + 1 : 1 });
+  state.depts.push(d);
+  queueWrite('departments', d.id, deptBody(d));
+  render();
+}
+function moveDept(id, dir) {
+  const d = dp(id); if (!d || !state.canWrite) return;
+  const list = deptsOf(d.company), i = list.indexOf(d), j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  list.forEach((x, k) => { x.order = k + 1; });
+  [list[i].order, list[j].order] = [list[j].order, list[i].order];
+  setDepts(state.depts);
+  list.forEach(x => queueWrite('departments', x.id, deptBody(x)));
+  render();
+}
+function removeDept(id) {
+  state.depts = state.depts.filter(x => x.id !== id);
+  queueWrite('departments', id, null);
   render();
 }
 function removeTask(id) {
@@ -569,6 +685,10 @@ function renderOverview() {
         <div><b>${s.follow}</b><span>${esc(T.openFollow)}</span></div>
         <div><b class="${s.risks ? 'warn' : ''}">${s.risks}</b><span>${esc(T.openRisks)}</span></div>
       </div>
+      ${DEPT_COMPANIES.includes(c.code) && deptsOf(c.code).length ? (() => { const ds = deptStats(c.code); return `<div class="sub chips"><b>${esc(T.deptTasks)}：</b><span class="num">${ds.open}</span> ${esc(T.sumOpen)}
+        ${ds.byLevel.priority ? `<span class="lv priority">${esc(T.levels.priority)} ${ds.byLevel.priority}</span>` : ''}
+        ${ds.byLevel.urgent ? `<span class="lv urgent">${esc(T.levels.urgent)} ${ds.byLevel.urgent}</span>` : ''}
+        ${ds.overdue ? `<span class="tag due">${esc(T.sumOverdue)} ${ds.overdue}</span>` : ''}</div>`; })() : ''}
       <div class="sub"><b>${esc(T.focus)}：</b>${c.focus ? esc(c.focus) : esc(T.notSet)}</div>
       <div class="sub ${s.stale === null || s.stale > 14 ? 'warn' : ''}"><b>${esc(T.lastLog)}：</b>${s.lastLog ? `<span class="num">${s.lastLog}</span>（${esc(T.daysAgo(s.stale))}）` : esc(T.noRecord)}</div>
     </div>`; }).join('')}
@@ -629,8 +749,10 @@ function renderDetail() {
   const T = L(), c = co(view.id);
   if (!c) { view = { page: 'overview', id: null, tab: 'info' }; return renderOverview(); }
   const s = summary(c);
-  const tabs = { info: T.tabInfo, tasks: `${T.tabTasks} ${s.todo + s.follow}`, logs: `${T.tabLogs} ${c.logs.length}`, risks: `${T.tabRisks} ${s.risks}` };
-  if (!tabs[view.tab]) view.tab = 'info';
+  const tabs = {};
+  if (DEPT_COMPANIES.includes(c.code)) tabs.depts = T.tabDepts + ' ' + deptStats(c.code).open;
+  Object.assign(tabs, { info: T.tabInfo, tasks: `${T.tabTasks} ${s.todo + s.follow}`, logs: `${T.tabLogs} ${c.logs.length}`, risks: `${T.tabRisks} ${s.risks}` });
+  if (!tabs[view.tab]) view.tab = Object.keys(tabs)[0];
   return `
   <div class="card">
     <div class="detail-head">
@@ -642,7 +764,102 @@ function renderDetail() {
     ${state.canWrite ? `<div class="sub" style="margin-top:6px">${esc(T.stageHint)}</div>` : ''}
   </div>
   <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${view.tab === k}" class="${view.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${esc(v)}</button>`).join('')}</div>
-  ${({ info: tabInfo, tasks: tabTasks, logs: tabLogs, risks: tabRisks })[view.tab](c)}`;
+  ${({ depts: tabDepts, info: tabInfo, tasks: tabTasks, logs: tabLogs, risks: tabRisks })[view.tab](c)}`;
+}
+
+/* ---------- 部门看板 ---------- */
+const openD = new Set();
+const dOverdue = t => !t.done && t.due && t.due <= nowLocal();
+function deptStats(code) {
+  const all = deptsOf(code).flatMap(d => d.tasks);
+  const open = all.filter(t => !t.done);
+  return { open: open.length, done: all.length - open.length, overdue: open.filter(dOverdue).length,
+    byLevel: Object.fromEntries(LEVELS.map(l => [l, open.filter(t => t.level === l).length])) };
+}
+const sortDTasks = list => [
+  ...list.filter(t => !t.done).sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level] || (a.due || '9').localeCompare(b.due || '9') || a.createdAt.localeCompare(b.createdAt)),
+  ...list.filter(t => t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')),
+];
+const lvOpts = cur => opt(LEVELS, L().levels, cur);
+
+function tabDepts(c) {
+  const T = L(), list = deptsOf(c.code), st = deptStats(c.code);
+  return `
+  ${list.length ? `<div class="dept-summary">
+    <span class="pill"><b>${st.open}</b>${esc(T.sumOpen)}</span>
+    ${['priority', 'urgent', 'important'].map(l => `<span class="pill"><b>${st.byLevel[l]}</b><span class="lv ${l}">${esc(T.levels[l])}</span></span>`).join('')}
+    <span class="pill"><b class="${st.overdue ? 'warn' : ''}">${st.overdue}</b>${esc(T.sumOverdue)}</span>
+    <span class="pill"><b>${st.done}</b>${esc(T.sumDone)}</span>
+  </div>` : ''}
+  ${state.canWrite ? `<div class="card add-card">
+    <form data-form="dept" id="nd-form" data-company="${esc(c.code)}" class="new-dept">
+      <input name="name" id="nd-name" required placeholder="${esc(T.newDept)}" aria-label="${esc(T.addDept)}">
+      <button class="primary">${esc(T.addDept)}</button>
+    </form>
+    ${(() => { const have = new Set(list.map(d => d.name.toLowerCase())); const left = DEPT_PRESETS.filter(p => !have.has(p.toLowerCase()));
+      return left.length ? `<div class="dept-presets"><span class="sub">${esc(T.presets)}</span>${left.map(p => `<button class="small" data-act="dept-preset" data-company="${esc(c.code)}" data-name="${esc(p)}">+ ${esc(p)}</button>`).join('')}</div>` : ''; })()}
+  </div>` : ''}
+  ${list.length ? `<div class="dept-board">${list.map((d, i) => deptCard(d, i, list.length)).join('')}</div>` : `<div class="card empty">${esc(T.deptEmpty)}</div>`}`;
+}
+
+function deptCard(d, i, n) {
+  const T = L(), open = d.tasks.filter(t => !t.done).length;
+  return `<section class="card dept" aria-label="${esc(d.name)}">
+    <div class="dept-head">
+      <input class="dept-name" id="dn-${d.id}" data-dname="${d.id}" value="${esc(d.name)}" aria-label="${esc(T.tabDepts)}" ${ro()}>
+      <span class="dept-count">${open}/${d.tasks.length}</span>
+      ${state.canWrite ? `<button class="ghost" data-act="dept-move" data-did="${d.id}" data-dir="-1" title="${esc(T.moveL)}" aria-label="${esc(T.moveL)}" ${i === 0 ? 'disabled' : ''}>‹</button>
+      <button class="ghost" data-act="dept-move" data-did="${d.id}" data-dir="1" title="${esc(T.moveR)}" aria-label="${esc(T.moveR)}" ${i === n - 1 ? 'disabled' : ''}>›</button>` : ''}
+      ${delBtn('dept', d.id)}
+    </div>
+    <div class="dept-body">
+      ${state.canWrite ? `<form data-form="dtask" data-did="${d.id}" id="dt-form-${d.id}" class="dept-add">
+        <input name="title" id="dt-title-${d.id}" required placeholder="${esc(T.deptTaskPh)}" aria-label="${esc(T.deptTaskPh)}">
+        <input type="datetime-local" name="due" id="dt-due-${d.id}" aria-label="${esc(T.dueLabel)}">
+        <select name="level" id="dt-lv-${d.id}" aria-label="${esc(T.levelLabel)}">${lvOpts('normal')}</select>
+        <button class="primary small">${esc(T.add)}</button>
+      </form>` : ''}
+      ${d.tasks.length ? sortDTasks(d.tasks).map(t => dTaskRow(d, t)).join('') : `<div class="empty">${esc(T.deptNoTasks)}</div>`}
+    </div>
+  </section>`;
+}
+
+function dTaskRow(d, t) {
+  const T = L(), open = openD.has(t.id), dd = t.details.filter(x => x.done).length;
+  return `<div class="dtask lv-${t.level} ${t.done ? 'is-done' : ''}">
+    <div class="dtask-row">
+      <input type="checkbox" data-act="dt-done" data-did="${d.id}" data-tid="${t.id}" ${t.done ? 'checked' : ''} aria-label="${esc(T.done)}" ${ro()}>
+      <div class="dtask-main" data-act="dt-open" data-tid="${t.id}" role="button" tabindex="0" aria-expanded="${open}" aria-label="${esc(T.expand)}">
+        <div class="dtask-title">${esc(t.title)}</div>
+        <div class="dtask-meta">
+          <span class="lv ${t.level}">${esc(T.levels[t.level])}</span>
+          ${t.due ? `<span class="mono ${dOverdue(t) ? 'warn' : ''}">${SVG_BELL} ${esc(fmtRemind(t.due))}</span>` : ''}
+          ${t.details.length ? `<span>${esc(T.details)} <span class="num">${dd}/${t.details.length}</span></span>` : ''}
+          <span class="chev ${open ? 'open' : ''}">▶</span>
+        </div>
+      </div>
+    </div>
+    ${open ? `<div class="dtask-detail">
+      ${state.canWrite ? `<div class="dtask-edit">
+        <input id="dte-title-${t.id}" data-dtf="title" data-did="${d.id}" data-tid="${t.id}" value="${esc(t.title)}" aria-label="${esc(T.taskTitle)}">
+        <input type="datetime-local" id="dte-due-${t.id}" data-dtf="due" data-did="${d.id}" data-tid="${t.id}" value="${esc(t.due)}" aria-label="${esc(T.dueLabel)}">
+        <select id="dte-lv-${t.id}" data-dtf="level" data-did="${d.id}" data-tid="${t.id}" aria-label="${esc(T.levelLabel)}">${lvOpts(t.level)}</select>
+        ${delBtn('dtask.' + d.id, t.id)}
+      </div>` : ''}
+      <div class="sub">${esc(T.details)}</div>
+      ${t.details.map(x => `<div class="ddet ${x.done ? 'is-done' : ''}">
+        <input type="checkbox" data-act="dd-done" data-did="${d.id}" data-tid="${t.id}" data-xid="${x.id}" ${x.done ? 'checked' : ''} aria-label="${esc(T.done)}" ${ro()}>
+        <span class="ddet-text">${esc(x.text)}</span>
+        ${x.date ? `<span class="date">${esc(x.date)}</span>` : ''}
+        ${delBtn('ddet.' + d.id + '.' + t.id, x.id)}
+      </div>`).join('') || `<div class="sub">${esc(T.noDetails)}</div>`}
+      ${state.canWrite ? `<form data-form="ddetail" data-did="${d.id}" data-tid="${t.id}" id="dd-form-${t.id}" class="ddet-form">
+        <input name="text" id="dd-text-${t.id}" required placeholder="${esc(T.detailPh)}" aria-label="${esc(T.detailPh)}">
+        <input type="date" name="date" id="dd-date-${t.id}" aria-label="${esc(T.logDate)}">
+        <button class="small">${esc(T.add)}</button>
+      </form>` : ''}
+    </div>` : ''}
+  </div>`;
 }
 
 function tabInfo(c) {
@@ -787,7 +1004,12 @@ document.addEventListener('click', e => {
   const code = view.id, tid = el.dataset.tid;
   switch (act) {
     case 'page': view = { page: el.dataset.page, id: null, tab: 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
-    case 'open': view = { page: 'detail', id: el.dataset.id, tab: 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
+    case 'open': view = { page: 'detail', id: el.dataset.id, tab: DEPT_COMPANIES.includes(el.dataset.id) ? 'depts' : 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
+    case 'dept-preset': return addDept(el.dataset.company, el.dataset.name);
+    case 'dept-move': return moveDept(el.dataset.did, Number(el.dataset.dir));
+    case 'dt-open': openD.has(tid) ? openD.delete(tid) : openD.add(tid); break;
+    case 'dt-done': return mutateDept(el.dataset.did, d => { const t = d.tasks.find(x => x.id === tid); if (t) { t.done = !t.done; t.doneAt = t.done ? new Date().toISOString() : ''; } });
+    case 'dd-done': return mutateDept(el.dataset.did, d => { const t = d.tasks.find(x => x.id === tid); const x = t && t.details.find(y => y.id === el.dataset.xid); if (x) x.done = !x.done; });
     case 'tab': view.tab = el.dataset.tab; ui.openTask = null; break;
     case 'lang': lang = lang === 'en' ? 'zh' : 'en'; try { localStorage.setItem('cm-lang', lang); } catch {} break;
     case 'filter': ui.filter = el.dataset.f; ui.openTask = null; saveUi(); break;
@@ -806,13 +1028,22 @@ document.addEventListener('click', e => {
       state.pendingDel = null;
       const kind = el.dataset.kind, item = el.dataset.item;
       if (kind === 'task') return removeTask(item);
+      if (kind === 'dept') return removeDept(item);
+      if (kind.startsWith('dtask.')) { openD.delete(item); return mutateDept(kind.split('.')[1], d => { d.tasks = d.tasks.filter(t => t.id !== item); }); }
+      if (kind.startsWith('ddet.')) { const [, did, dtid] = kind.split('.'); return mutateDept(did, d => { const t = d.tasks.find(x => x.id === dtid); if (t) t.details = t.details.filter(x => x.id !== item); }); }
       if (kind.startsWith('upd-')) return mutateTask(kind.slice(4), t => { t.updates = t.updates.filter(u => u.id !== item); });
       return mutate(code, c => { c[kind] = c[kind].filter(x => x.id !== item); });
     }
     case 'export': return exportData();
     case 'import': return document.getElementById('importFile').click();
     case 'import-yes': {
-      const { companies, tasks } = state.pendingImport; state.pendingImport = null;
+      const { companies, tasks, depts = [] } = state.pendingImport; state.pendingImport = null;
+      depts.forEach(raw => {
+        const d = normDept(raw), i = state.depts.findIndex(x => x.id === d.id);
+        if (i >= 0) state.depts[i] = d; else state.depts.push(d);
+        if (state.mode === 'db') queueWrite('departments', d.id, deptBody(d));
+      });
+      setDepts(state.depts);
       companies.forEach(raw => {
         const c = normCompany(raw), i = state.companies.findIndex(x => x.code === c.code);
         if (i >= 0) state.companies[i] = c; else state.companies.push(c);
@@ -840,6 +1071,16 @@ document.addEventListener('keydown', e => {
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.ui) { ui[el.dataset.ui] = el.value; saveUi(); return render(); }
+  if (el.dataset.dname) {
+    const v = el.value.trim();
+    if (!v) return render();
+    return mutateDept(el.dataset.dname, d => { d.name = v; });
+  }
+  if (el.dataset.dtf) {
+    const f = el.dataset.dtf, v = el.value, tid = el.dataset.tid;
+    if (f === 'title' && !v.trim()) return render();
+    return mutateDept(el.dataset.did, d => { const t = d.tasks.find(x => x.id === tid); if (t) t[f] = f === 'title' ? v.trim() : v; });
+  }
   if (el.dataset.tfield) {
     const f = el.dataset.tfield, v = el.value;
     if (f === 'title' && !v.trim()) return render();
@@ -868,6 +1109,17 @@ document.addEventListener('submit', e => {
     clear();
     return addTask({ ...data, createdAt: new Date().toISOString() });
   }
+  if (kind === 'dept') { clear(); return addDept(form.dataset.company, data.name); }
+  if (kind === 'dtask') {
+    if (!data.title) return;
+    clear();
+    return mutateDept(form.dataset.did, d => { d.tasks.push(normDTask({ title: data.title, due: data.due, level: data.level })); });
+  }
+  if (kind === 'ddetail') {
+    if (!data.text) return;
+    clear();
+    return mutateDept(form.dataset.did, d => { const t = d.tasks.find(x => x.id === form.dataset.tid); if (t) t.details.push(normDetail({ text: data.text, date: data.date })); });
+  }
   if (kind === 'tupdate') {
     if (!data.text) return;
     clear();
@@ -882,7 +1134,7 @@ document.addEventListener('submit', e => {
 });
 
 async function exportData() {
-  const json = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), companies: state.companies, tasks: state.tasks }, null, 2);
+  const json = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), companies: state.companies, tasks: state.tasks, depts: state.depts }, null, 2);
   const filename = `company-manager-backup-${today()}.json`;
   if (downloads) {
     try { await downloads.save({ filename, data: json }); } catch (err) { if (err && err.code !== 'declined') { state.error = 'errExport'; render(); } }
@@ -904,8 +1156,9 @@ document.getElementById('importFile').addEventListener('change', async e => {
     const companies = (Array.isArray(data) ? data : data.companies || []).map(x => ({ ...x, code: x.code || x.id }));
     if (!companies.every(x => x && x.code)) throw new Error();
     const tasks = [...(Array.isArray(data.tasks) ? data.tasks : []), ...liftCompanyTasks(companies)];
-    if (!companies.length && !tasks.length) throw new Error();
-    state.pendingImport = { companies: companies.map(({ id, tasks, milestones, ...rest }) => rest), tasks };
+    const depts = Array.isArray(data.depts) ? data.depts : [];
+    if (!companies.length && !tasks.length && !depts.length) throw new Error();
+    state.pendingImport = { companies: companies.map(({ id, tasks, milestones, ...rest }) => rest), tasks, depts };
   } catch { state.error = 'errFile'; }
   render();
 });
@@ -916,7 +1169,7 @@ function startLocal() {
   let saved = null, v1 = null;
   try { saved = JSON.parse(localStorage.getItem(LOCAL_KEY)); } catch {}
   if (!saved) { try { v1 = JSON.parse(localStorage.getItem(LOCAL_KEY_V1)); } catch {} }
-  if (saved && Array.isArray(saved.companies)) { setCompanies(saved.companies); setTasks(saved.tasks || []); }
+  if (saved && Array.isArray(saved.companies)) { setCompanies(saved.companies); setTasks(saved.tasks || []); setDepts(saved.depts || []); }
   else if (v1) {
     const list = (Array.isArray(v1) ? v1 : v1.companies || []).map(x => ({ ...x, code: x.code || x.id }));
     setCompanies(list.length ? list : localSeed()); setTasks(liftCompanyTasks(list)); saveLocal();
@@ -938,10 +1191,15 @@ async function start() {
 
   state.mode = 'db';
   render();
-  const live = { companies: false, mytasks: false };
-  const timer = setTimeout(() => { if (!live.companies || !live.mytasks) { state.slow = true; render(); } }, 10000);
+  const live = { companies: false, mytasks: false, departments: false };
+  const allLive = () => Object.values(live).every(Boolean);
+  const timer = setTimeout(() => { if (!allLive()) { state.slow = true; render(); } }, 10000);
   const onErr = err => { clearTimeout(timer); state.slow = false; state.error = err && err.code === 'revoked' ? '' : 'errConn'; render(); };
-  const markLive = (k, snap) => { if (!snap.metadata.fromCache) { live[k] = true; if (live.companies && live.mytasks) { clearTimeout(timer); state.slow = false; } } };
+  const markLive = (k, snap) => { if (!snap.metadata.fromCache) { live[k] = true; if (allLive()) { clearTimeout(timer); state.slow = false; } } };
+  store.collection('departments').onSnapshot(snap => {
+    setDepts(snap.docs.filter(d => d.exists).map(d => ({ ...d.data(), id: d.id })));
+    markLive('departments', snap); render();
+  }, onErr);
   store.collection('companies').onSnapshot(snap => {
     setCompanies(snap.docs.filter(d => d.exists).map(d => ({ ...d.data(), code: d.id })));
     markLive('companies', snap); render();
