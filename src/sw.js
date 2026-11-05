@@ -20,13 +20,25 @@ self.addEventListener('fetch', e => {
   if (!sameOrigin && !FONT_HOSTS.includes(url.hostname)) return;     // Firebase / Google APIs go straight to the network
   if (sameOrigin && url.pathname.startsWith('/__/')) return;          // Firebase Hosting reserved URLs
 
-  // Page loads: try the network first so updates show up, fall back to the cached shell offline.
-  if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('index.html', copy)); return res; })
-      .catch(() => caches.match('index.html', { ignoreSearch: true })));
+  // App files (page, script, manifest): network first so a new version shows on the first open;
+  // the cached copy is used when offline or when the network takes more than 4 seconds.
+  const isApp = sameOrigin && (req.mode === 'navigate' || /\/(index\.html|app\.js|manifest\.webmanifest)?$/.test(url.pathname));
+  if (isApp) {
+    const key = req.mode === 'navigate' ? 'index.html' : url.pathname.replace(/^\//, '');
+    e.respondWith((async () => {
+      const c = await caches.open(CACHE);
+      const net = fetch(url.href, { cache: 'no-cache', credentials: 'same-origin' }).then(res => { if (res.ok) c.put(key, res.clone()); return res; });
+      net.catch(() => {});
+      const timeout = new Promise(r => setTimeout(r, 4000));
+      try {
+        const res = await Promise.race([net, timeout]);
+        if (res) return res;
+      } catch {}
+      return (await c.match(key, { ignoreSearch: true })) || net;
+    })());
     return;
   }
-  // Everything else: cached copy at once, refreshed in the background.
+  // Icons and fonts: cached copy at once, refreshed in the background.
   e.respondWith(caches.open(CACHE).then(async c => {
     const hit = await c.match(req, { ignoreSearch: sameOrigin });
     const net = fetch(req).then(res => { if (res.ok || res.type === 'opaque') c.put(req, res.clone()); return res; }).catch(() => hit);
