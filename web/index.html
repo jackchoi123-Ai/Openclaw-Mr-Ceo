@@ -242,6 +242,18 @@
   .sync.off { border-color: var(--yellow); background: var(--yellow-soft); color: var(--ink); white-space: normal; }
   .sync.off::before { background: var(--yellow); }
   .login { max-width: 420px; margin: 40px auto; }
+
+  /* owners */
+  .owner-filter { width: auto !important; flex: 0 1 auto; font-size: 13px !important; padding: 6px 10px !important; border-radius: 10px !important; background: var(--panel) !important; margin-left: auto; }
+  .owner-chip { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; line-height: 18px; white-space: nowrap; }
+  .people { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .people-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; }
+  .person { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; padding: 2px 4px 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .person .ghost { padding: 0 4px; font-size: 12px; }
+  .person-add { display: inline-flex; gap: 6px; flex: 1 1 220px; }
+  .person-add input { font-size: 13px; padding: 4px 8px; }
+  .dept-add input[name=owner] { flex: 1 1 140px; }
+  .dtask-edit input[data-dtf=owner] { flex: 1 1 140px; }
 </style>
 </head>
 <body>
