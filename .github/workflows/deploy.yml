@@ -1,0 +1,44 @@
+name: Deploy to Firebase
+
+# Publishes the app (web/) and the database access rules whenever main changes.
+# Needs one repository secret: FIREBASE_SERVICE_ACCOUNT (the service-account JSON key).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Check Firebase config is filled in
+        run: |
+          node -e "import('./src/firebase-config.js').then(m => { if (!m.default.projectId) { console.error('src/firebase-config.js is still empty'); process.exit(1); } })"
+      - name: Write service account key
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "Missing secret FIREBASE_SERVICE_ACCOUNT"; exit 1; fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+      - name: Deploy hosting and database rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: |
+          PROJECT=$(node -e "import('./src/firebase-config.js').then(m => console.log(m.default.projectId))")
+          npx firebase deploy --only hosting,firestore:rules --project "$PROJECT" --non-interactive
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

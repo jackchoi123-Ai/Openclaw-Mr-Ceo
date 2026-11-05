@@ -11,7 +11,9 @@
 
 ## 使用
 
-**在线版（手机 / 平板 / 电脑同步）：** https://claude.ai/artifact/JATkDEEtyGnYH3BjMQzd8U
+**离线 App 版（推荐，开发中）：** 放在 Firebase 上的网页 App，可以装到手机桌面，没网络也能用，联网自动同步。代码在 `web/`、`src/`，设置步骤见 [docs/SETUP.md](docs/SETUP.md)。
+
+**在线版（claude.ai）：** https://claude.ai/artifact/JATkDEEtyGnYH3BjMQzd8U
 登录 claude.ai 后打开，数据保存在云端，各设备看到同一份。
 
 **离线版：** 直接用浏览器打开 `index.html` 也能用，但数据只保存在那台设备的浏览器里。
@@ -25,3 +27,17 @@
 - **周检视**：未来 7 天和已到期的提醒、超过 14 天没跟进的长期事项、高风险事项、过去 7 天的进展、各公司状态一览。
 - **提醒**：提醒在打开页面时显示（总览顶部和导航上的红色数字），不会推送到手机通知栏。
 - **导出 / 导入**：把数据导出成 JSON 备份文件，或从备份恢复。在线版和离线版的备份文件通用。
+
+## 离线 App 版的文件
+
+| 路径 | 用途 |
+|---|---|
+| `src/app.js` | App 逻辑（和 claude.ai 版相同的功能） |
+| `src/store.js` | Firebase 登录、离线缓存、同步 |
+| `src/firebase-config.js` | Firebase 项目配置（留空 = 本地模式） |
+| `src/sw.js` | 离线缓存（service worker） |
+| `web/` | 发布到 Firebase Hosting 的网页 |
+| `firestore.rules` | 数据库访问规则：只有名单里的邮箱能读写 |
+| `.github/workflows/deploy.yml` | 合并到 main 后自动发布 |
+
+本地测试：`npm install`，然后 `npm run build`。用 Firebase 模拟器测试时，打开网址加上 `?emulator`。

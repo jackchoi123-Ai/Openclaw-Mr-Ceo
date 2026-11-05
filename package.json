@@ -1,0 +1,18 @@
+{
+  "name": "group-company-manager",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Offline-first company manager (PWA + Firebase)",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "emulators": "firebase emulators:start --only auth,firestore,hosting --project demo-manager"
+  },
+  "dependencies": {
+    "firebase": "12.19.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "firebase-tools": "15.34.0"
+  }
+}

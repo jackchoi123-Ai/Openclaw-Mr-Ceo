@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 只有名单里的邮箱可以读写。要给同事开权限：把对方邮箱加进名单，推送后自动生效。
+    function allowed() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'jackchoi123@gmail.com'
+        ];
+    }
+    match /{document=**} {
+      allow read, write: if allowed();
+    }
+  }
+}
