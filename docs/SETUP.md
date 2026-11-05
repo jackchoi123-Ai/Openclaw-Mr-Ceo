@@ -9,7 +9,7 @@
 
 1. 用你的 Google 账号打开 <https://console.firebase.google.com>
 2. 点 **Create a project**（创建项目）
-3. 项目名称填 `simbaplus-manager`（可以换别的名字，网址会用到它）
+3. 项目名称填 `simbaplus-manager`（可以换别的名字，网址会用到它）。你的项目是 `business-development-98ceb`
 4. Google Analytics 选 **不启用**，然后点 **Create project**
 
 ## 第 2 步：添加网页应用，取得配置
@@ -70,7 +70,7 @@
 
 1. 填好配置并提交
 2. 请你合并 Pull Request（合并后会自动发布）
-3. 确认网站上线：`https://simbaplus-manager.web.app`（以你的项目名为准）
+3. 确认网站上线：`https://business-development-98ceb.web.app`
 
 ---
 
