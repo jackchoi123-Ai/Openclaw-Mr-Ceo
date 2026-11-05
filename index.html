@@ -1,401 +1,536 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>集团公司管理器</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+  /* Layout: sticky top bar → 4 company cards in a grid → per-company workspace with tabs. Blueprint-blue accent on a slightly green-grey site-office neutral. */
   :root {
-    --bg: #f5f6f8; --panel: #ffffff; --ink: #1d2330; --muted: #6b7385; --line: #e3e6ec;
-    --accent: #2f5bd3; --accent-soft: #e8eefc;
-    --green: #1f9d55; --green-soft: #e3f5ea; --yellow: #c98a00; --yellow-soft: #fff3d6;
-    --red: #d1393a; --red-soft: #fde6e6;
+    --bg: #f2f3f0; --panel: #ffffff; --ink: #1c2321; --muted: #66706c; --line: #dde1dc;
+    --accent: #24548f; --accent-ink: #ffffff; --accent-soft: #e6edf6;
+    --green: #1d8a4e; --green-soft: #e2f3e8; --yellow: #a86f00; --yellow-soft: #fbf0d4;
+    --red: #c43535; --red-soft: #fbe5e3;
+    --f-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --f-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151c; --panel: #1b1f29; --ink: #e8ebf2; --muted: #9098aa; --line: #2c3240;
-      --accent: #7c9cff; --accent-soft: #232c45;
-      --green: #4cc27e; --green-soft: #183326; --yellow: #e8b33c; --yellow-soft: #3a2f14;
-      --red: #ff6b6b; --red-soft: #3d1d1f;
+    :root:not([data-theme="light"]) {
+      --bg: #121614; --panel: #1b201e; --ink: #e6ebe8; --muted: #95a09b; --line: #2c3431;
+      --accent: #7fa8e0; --accent-ink: #0f1a2a; --accent-soft: #1f2c3e;
+      --green: #55c587; --green-soft: #173226; --yellow: #e5b54a; --yellow-soft: #3a2f13;
+      --red: #ff7a72; --red-soft: #3e1d1c; color-scheme: dark;
     }
   }
+  :root[data-theme="dark"] {
+    --bg: #121614; --panel: #1b201e; --ink: #e6ebe8; --muted: #95a09b; --line: #2c3431;
+    --accent: #7fa8e0; --accent-ink: #0f1a2a; --accent-soft: #1f2c3e;
+    --green: #55c587; --green-soft: #173226; --yellow: #e5b54a; --yellow-soft: #3a2f13;
+    --red: #ff7a72; --red-soft: #3e1d1c; color-scheme: dark;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
-  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-    padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
-  header h1 { font-size: 18px; margin: 0; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+  .num, .date, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+  header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .bar-inner { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+    padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  header h1 { font: 700 18px/1.2 var(--f-display); margin: 0; letter-spacing: .02em; }
   nav { display: flex; flex-wrap: wrap; gap: 6px; }
-  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  main { max-width: 1180px; margin: 0 auto; padding-block: 18px 60px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
     padding: 6px 12px; border-radius: 8px; cursor: pointer; }
   button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .company-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
   button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 2px 6px; }
   button.ghost:hover { color: var(--red); }
-  main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 60px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .company-card { cursor: pointer; display: flex; flex-direction: column; gap: 10px; border-top: 4px solid var(--line); }
+  button.danger { background: var(--red); border-color: var(--red); color: #fff; padding: 2px 8px; }
+
+  .banner { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: var(--muted); }
+  .banner.warn { border-color: var(--yellow); background: var(--yellow-soft); color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .company-card { cursor: pointer; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden; }
+  .company-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: var(--line); }
+  .company-card.h-green::before { background: var(--green); }
+  .company-card.h-yellow::before { background: var(--yellow); }
+  .company-card.h-red::before { background: var(--red); }
   .company-card:hover { border-color: var(--accent); }
-  .company-card.h-green { border-top-color: var(--green); }
-  .company-card.h-yellow { border-top-color: var(--yellow); }
-  .company-card.h-red { border-top-color: var(--red); }
-  .code { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px;
-    background: var(--accent-soft); color: var(--accent); font-weight: 700; margin-right: 8px; flex: none; }
-  .title-row { display: flex; align-items: center; }
-  .cname { font-weight: 600; line-height: 1.25; }
+  .code { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; flex: none;
+    background: var(--accent-soft); color: var(--accent); font: 500 15px var(--f-mono); }
+  .title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .cname { font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
   .sub { color: var(--muted); font-size: 13px; }
-  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg);
-    border: 1px solid var(--line); color: var(--muted); margin-right: 4px; white-space: nowrap; }
-  .health { font-size: 12px; padding: 1px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .health { font-size: 12px; padding: 1px 8px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
   .health.green { background: var(--green-soft); color: var(--green); }
   .health.yellow { background: var(--yellow-soft); color: var(--yellow); }
   .health.red { background: var(--red-soft); color: var(--red); }
-  .bar { height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden; }
-  .bar > i { display: block; height: 100%; background: var(--accent); }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
-  .stats b { display: block; font-size: 18px; }
+  .progress { height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; background: var(--accent); }
+  .spread { display: flex; justify-content: space-between; gap: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; padding-block: 6px; border-block: 1px solid var(--line); }
+  .stats b { display: block; font: 500 20px var(--f-mono); }
   .stats span { font-size: 12px; color: var(--muted); }
   .warn { color: var(--red); }
-  h2 { font-size: 17px; margin: 24px 0 10px; }
+  h2 { font-size: 16px; margin: 26px 0 10px; text-wrap: balance; }
   h3 { font-size: 15px; margin: 0 0 10px; }
-  .pipeline { display: flex; gap: 3px; margin: 6px 0; }
-  .pipeline span { flex: 1; min-width: 0; text-align: center; font-size: 12px; padding: 4px 1px; white-space: nowrap; overflow: hidden; border-radius: 6px;
-    background: var(--bg); color: var(--muted); cursor: pointer; border: 1px solid transparent; }
-  .pipeline span.done { background: var(--accent-soft); color: var(--accent); }
-  .pipeline span.now { background: var(--accent); color: #fff; font-weight: 600; }
-  .detail-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 12px; }
+
+  .pipeline { display: flex; gap: 3px; }
+  .pipeline span { flex: 1; min-width: 0; text-align: center; font-size: 12px; padding: 4px 1px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: var(--bg); color: var(--muted); }
+  .pipeline button { flex: 1; min-width: 0; font-size: 12px; padding: 5px 1px; border-radius: 6px; white-space: nowrap; overflow: hidden; background: var(--bg); color: var(--muted); border-color: transparent; }
+  .pipeline .done { background: var(--accent-soft); color: var(--accent); }
+  .pipeline .now { background: var(--accent); color: var(--accent-ink); font-weight: 500; }
+
+  .detail-head { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .detail-head .cname { font: 700 18px/1.3 var(--f-display); }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; margin: 16px 0 12px; padding-bottom: 2px; }
+  .tabs button { white-space: nowrap; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
-  input, select, textarea { font: inherit; width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--bg); color: var(--ink); }
-  textarea { min-height: 70px; resize: vertical; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, textarea { font: inherit; font-size: 16px; width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); min-width: 0; }
+  textarea { min-height: 76px; resize: vertical; }
+  input[type=checkbox] { width: 18px; height: 18px; margin-top: 3px; flex: none; accent-color: var(--accent); }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .row > * { flex: 1; min-width: 110px; }
-  .row > button, .row > .narrow { flex: none; min-width: 0; }
+  .row > * { flex: 1 1 120px; }
+  .row > button, .row > .fixed { flex: 0 0 auto; }
+  .w-date { flex: 0 1 165px !important; }
+  .w-sm { flex: 0 1 90px !important; }
+  .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
-  th { color: var(--muted); font-weight: 500; font-size: 13px; }
-  tr.done td { color: var(--muted); text-decoration: line-through; }
-  .list-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; letter-spacing: .04em; white-space: nowrap; }
+  td.t { min-width: 8em; }
+  td button { white-space: nowrap; }
+  tr.done td { color: var(--muted); }
+  tr.done td.t { text-decoration: line-through; }
+  .list-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .list-item:last-child { border-bottom: 0; }
-  .list-item .grow { flex: 1; min-width: 0; }
+  .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .struck { text-decoration: line-through; color: var(--muted); }
   .date { color: var(--muted); font-size: 13px; white-space: nowrap; }
   .empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
-  .pri-high { color: var(--red); font-weight: 600; }
+  .pri-high { color: var(--red); font-weight: 500; }
   .pri-mid { color: var(--yellow); }
   .pri-low { color: var(--muted); }
-  .table-wrap { overflow-x: auto; }
-  .note { color: var(--muted); font-size: 12px; margin-top: 30px; text-align: center; }
-  input[type=checkbox] { width: auto; margin-top: 3px; }
+  .kpi-in { width: 96px; padding: 4px 6px; font-size: 14px; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 30px; text-align: center; }
+  .confirm-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 </style>
-</head>
-<body>
-<header>
-  <h1>🏢 集团公司管理器</h1>
+
+<header><div class="bar-inner">
+  <h1>集团公司管理器</h1>
   <nav id="nav"></nav>
-</header>
-<main id="app"></main>
-<input type="file" id="importFile" accept="application/json" hidden>
+</div></header>
+<main id="app"><div class="card empty">正在载入公司数据…</div></main>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
 
 <script>
-/* ============ 配置 ============ */
-const STORAGE_KEY = 'company-manager-v1';
-
+/* ===================== 配置 ===================== */
+const LOCAL_KEY = 'company-manager-v1';
 const TYPES = { core: '主体公司', startup: '创业型', restart: '重启型' };
-const HEALTH = { green: '🟢 正常', yellow: '🟡 关注', red: '🔴 预警' };
+const HEALTH = { green: '正常', yellow: '关注', red: '预警' };
 const STAGES = {
   core:    ['稳定运营', '优化提升', '扩张'],
   startup: ['筹备', '验证', '起步', '增长', '稳定'],
   restart: ['盘点', '止损', '重组', '重新起步', '增长'],
 };
 const PRI = { high: '高', mid: '中', low: '低' };
+const LISTS = ['kpis', 'milestones', 'tasks', 'logs', 'risks'];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const today = () => new Date().toISOString().slice(0, 10);
+const localDate = (offsetDays = 0) => { const d = new Date(Date.now() + offsetDays * 864e5); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const today = () => localDate(0);
 
-function seed() {
-  const c = (code, name, cn, type, industry) => ({
-    id: code, code, name, cn, type, industry, stage: 0, health: 'green',
-    owner: '', focus: '', kpis: [], milestones: [], tasks: [], logs: [], risks: [],
-  });
-  return {
-    version: 1,
-    companies: [
-      c('A', 'Simbaplus Engineering M Sdn Bhd', '主体建筑公司', 'core', '建筑工程'),
-      c('B', 'Move Industrial Technology Sdn Bhd', '移动出行 · 电三轮制造', 'startup', '电动车制造'),
-      c('C', 'Lavida Home Concepts Sdn Bhd', '室内设计公司', 'startup', '室内设计'),
-      c('D', 'Eco Space Panel M Sdn Bhd', '建材贸易公司', 'startup', '建材贸易'),
-    ],
-  };
+/* Local-only fallback (when the page is opened outside claude.ai) */
+function localSeed() {
+  const c = (code, name, cn, type, industry) => ({ code, name, cn, type, industry, stage: 0, health: 'green', owner: '', focus: '', kpis: [], milestones: [], tasks: [], logs: [], risks: [] });
+  return [
+    c('A', 'Simbaplus Engineering M Sdn Bhd', '主体建筑公司', 'core', '建筑工程'),
+    c('B', 'Move Industrial Technology Sdn Bhd', '移动出行 · 电三轮制造', 'startup', '电动车制造'),
+    c('C', 'Lavida Home Concepts Sdn Bhd', '室内设计公司', 'startup', '室内设计'),
+    c('D', 'Eco Space Panel M Sdn Bhd', '建材贸易公司', 'startup', '建材贸易'),
+  ];
 }
 
-/* ============ 数据 ============ */
-let db;
-try { db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || seed(); } catch { db = seed(); }
-const save = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch {} };
-const co = id => db.companies.find(x => x.id === id);
-
+/* ===================== 状态 ===================== */
+const state = {
+  mode: 'loading',        // loading | db | local
+  companies: [],          // sorted by code
+  canWrite: true,
+  slow: false,            // db not answering after 10s
+  error: '',
+  pendingDel: null,       // id waiting for second tap
+  pendingImport: null,    // parsed data waiting for confirm
+};
 let view = { page: 'overview', id: null, tab: 'overview' };
+let store = null, downloads = null;
 
-/* ============ 工具 ============ */
+const normalize = c => {
+  const o = { ...c };
+  LISTS.forEach(k => { o[k] = Array.isArray(c[k]) ? c[k].map(x => ({ ...x })) : []; });
+  if (!STAGES[o.type]) o.type = 'startup';
+  o.stage = Math.min(Math.max(Number(o.stage) || 0, 0), STAGES[o.type].length - 1);
+  if (!HEALTH[o.health]) o.health = 'green';
+  return o;
+};
+const setCompanies = list => { state.companies = list.map(normalize).sort((a, b) => String(a.code).localeCompare(String(b.code))); };
+const co = code => state.companies.find(x => x.code === code);
+
+/* ---- writes: one in flight per company doc, latest state wins ---- */
+const writeQ = {};
+function persist(c) {
+  if (state.mode === 'local') { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(state.companies)); } catch {} return; }
+  if (state.mode !== 'db') return;
+  const q = writeQ[c.code] || (writeQ[c.code] = { busy: false, next: null });
+  q.next = JSON.parse(JSON.stringify(c));
+  if (!q.busy) flush(c.code);
+}
+async function flush(code) {
+  const q = writeQ[code];
+  q.busy = true;
+  while (q.next) {
+    const body = q.next; q.next = null;
+    try { await store.collection('companies').doc(code).set(body); state.error = ''; }
+    catch (e) {
+      if (e && (e.code === 'invalid_argument')) { state.canWrite = false; state.error = '你只有查看权限，修改没有保存。'; }
+      else if (e && e.code === 'quota_exceeded') state.error = '存储空间已满，请删除一些旧的进展记录后再试。';
+      else state.error = '保存失败，请检查网络后再改一次。';
+      render();
+    }
+  }
+  q.busy = false;
+}
+function mutate(code, fn) {
+  const c = co(code);
+  if (!c || !state.canWrite) return;
+  fn(c);
+  persist(c);
+  render();
+}
+
+/* ===================== 工具 ===================== */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const isOverdue = t => !t.done && t.due && t.due < today();
-const daysAgo = d => d ? Math.floor((Date.parse(today()) - Date.parse(d)) / 864e5) : null;
+const daysAgo = d => Math.round((Date.parse(today()) - Date.parse(d)) / 864e5);
+const byDue = (a, b) => (a.due || '9').localeCompare(b.due || '9');
+const ro = () => state.canWrite ? '' : 'disabled';
 
 function summary(c) {
   const ms = c.milestones, done = ms.filter(m => m.done).length;
-  const openTasks = c.tasks.filter(t => !t.done);
+  const open = c.tasks.filter(t => !t.done);
   const lastLog = c.logs.map(l => l.date).sort().pop();
   return {
-    progress: ms.length ? Math.round(done / ms.length * 100) : 0,
-    msText: `${done}/${ms.length}`,
-    open: openTasks.length,
-    overdue: openTasks.filter(isOverdue).length,
-    risks: c.risks.filter(r => !r.closed).length,
+    progress: ms.length ? Math.round(done / ms.length * 100) : 0, msText: `${done}/${ms.length}`,
+    open: open.length, overdue: open.filter(isOverdue).length, risks: c.risks.filter(r => !r.closed).length,
     lastLog, stale: lastLog ? daysAgo(lastLog) : null,
-    nextMs: ms.filter(m => !m.done).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'))[0],
+    nextMs: ms.filter(m => !m.done).sort(byDue)[0],
   };
 }
+const healthChip = h => `<span class="health ${h}">${HEALTH[h]}</span>`;
 
 function pipeline(c, clickable) {
-  return `<div class="pipeline">${STAGES[c.type].map((s, i) =>
-    `<span class="${i < c.stage ? 'done' : i === c.stage ? 'now' : ''}" ${clickable ? `data-act="stage" data-i="${i}" title="设为当前阶段"` : ''}>${esc(s)}</span>`
-  ).join('')}</div>`;
+  return `<div class="pipeline">${STAGES[c.type].map((s, i) => {
+    const cls = i < c.stage ? 'done' : i === c.stage ? 'now' : '';
+    return clickable && state.canWrite
+      ? `<button class="${cls}" data-act="stage" data-i="${i}" title="设为当前阶段">${esc(s)}</button>`
+      : `<span class="${cls}">${esc(s)}</span>`;
+  }).join('')}</div>`;
+}
+function delBtn(list, id) {
+  if (!state.canWrite) return '';
+  const key = list + ':' + id;
+  return state.pendingDel === key
+    ? `<button class="danger" data-act="del" data-list="${list}" data-item="${id}">确认删除</button>`
+    : `<button class="ghost" data-act="del-ask" data-key="${key}" aria-label="删除">✕</button>`;
 }
 
-/* ============ 页面：总览 ============ */
+/* ===================== 页面：总览 ===================== */
 function renderOverview() {
-  const all = db.companies.map(c => ({ c, s: summary(c) }));
-  const totalOverdue = all.reduce((n, x) => n + x.s.overdue, 0);
+  if (!state.companies.length) return `<div class="card"><h3>还没有公司数据</h3><div class="sub">四家公司（A Simbaplus、B Move Industrial、C Lavida、D Eco Space）的资料建好后会显示在这里。也可以点右上角「导入」恢复备份文件。</div></div>`;
+  const all = state.companies.map(c => ({ c, s: summary(c) }));
+  const overdue = all.flatMap(({ c }) => c.tasks.filter(isOverdue).map(t => ({ c, t })));
   return `
   <div class="grid">${all.map(({ c, s }) => `
-    <div class="card company-card h-${c.health}" data-act="open" data-id="${c.id}">
+    <div class="card company-card h-${c.health}" data-act="open" data-id="${esc(c.code)}" tabindex="0" role="button" aria-label="打开 ${esc(c.name)}">
       <div class="title-row"><span class="code">${esc(c.code)}</span>
-        <div><div class="cname">${esc(c.name)}</div><div class="sub">${esc(c.cn)}</div></div></div>
-      <div><span class="tag">${TYPES[c.type]}</span><span class="health ${c.health}">${HEALTH[c.health]}</span></div>
-      ${pipeline(c)}
-      <div><div class="row sub" style="justify-content:space-between"><span>里程碑 ${s.msText}</span><span>${s.progress}%</span></div>
-        <div class="bar"><i style="width:${s.progress}%"></i></div></div>
+        <div style="min-width:0"><div class="cname">${esc(c.name)}</div><div class="sub">${esc(c.cn)}</div></div></div>
+      <div class="chips"><span class="tag">${TYPES[c.type]}</span>${healthChip(c.health)}</div>
+      ${pipeline(c, false)}
+      <div><div class="spread sub"><span>里程碑 <span class="num">${s.msText}</span></span><span class="num">${s.progress}%</span></div>
+        <div class="progress"><i style="width:${s.progress}%"></i></div></div>
       <div class="stats">
         <div><b>${s.open}</b><span>待办</span></div>
         <div><b class="${s.overdue ? 'warn' : ''}">${s.overdue}</b><span>逾期</span></div>
-        <div><b class="${s.risks ? 'warn' : ''}">${s.risks}</b><span>风险</span></div>
+        <div><b class="${s.risks ? 'warn' : ''}">${s.risks}</b><span>未解决风险</span></div>
       </div>
-      <div class="sub">🎯 ${c.focus ? esc(c.focus) : '<i>未设定本期重点</i>'}</div>
-      <div class="sub">⏭ 下个里程碑：${s.nextMs ? esc(s.nextMs.title) + (s.nextMs.due ? ` (${s.nextMs.due})` : '') : '—'}</div>
-      <div class="sub ${s.stale === null || s.stale > 14 ? 'warn' : ''}">📝 最近更新：${s.lastLog ? `${s.lastLog}（${s.stale} 天前）` : '暂无记录'}</div>
+      <div class="sub"><b>本期重点：</b>${c.focus ? esc(c.focus) : '未设定'}</div>
+      <div class="sub"><b>下个里程碑：</b>${s.nextMs ? esc(s.nextMs.title) + (s.nextMs.due ? ` <span class="num">${s.nextMs.due}</span>` : '') : '—'}</div>
+      <div class="sub ${s.stale === null || s.stale > 14 ? 'warn' : ''}"><b>最近更新：</b>${s.lastLog ? `<span class="num">${s.lastLog}</span>（${s.stale} 天前）` : '暂无记录'}</div>
     </div>`).join('')}
   </div>
-  ${totalOverdue ? `<h2>⚠️ 逾期待办（${totalOverdue}）</h2>${crossTaskTable(all.flatMap(({ c }) => c.tasks.filter(isOverdue).map(t => ({ c, t }))))}` : ''}
-  `;
+  ${overdue.length ? `<h2>逾期待办（${overdue.length}）</h2>${crossTaskTable(overdue)}` : ''}`;
 }
 
 function crossTaskTable(rows) {
   if (!rows.length) return '<div class="card empty">没有记录</div>';
-  rows.sort((a, b) => (a.t.due || '9').localeCompare(b.t.due || '9'));
+  rows.sort((a, b) => byDue(a.t, b.t));
   return `<div class="card table-wrap"><table><tr><th>公司</th><th>事项</th><th>负责人</th><th>截止</th><th>优先级</th><th></th></tr>
-    ${rows.map(({ c, t }) => `<tr><td><span class="code">${esc(c.code)}</span></td><td>${esc(t.title)}</td><td>${esc(t.owner)}</td>
-      <td class="${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td><td class="pri-${t.priority}">${PRI[t.priority]}</td>
-      <td><button data-act="toggle-task" data-id="${c.id}" data-item="${t.id}">完成</button></td></tr>`).join('')}
+    ${rows.map(({ c, t }) => `<tr><td><span class="code">${esc(c.code)}</span></td><td class="t">${esc(t.title)}</td><td>${esc(t.owner)}</td>
+      <td class="date ${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td><td class="pri-${t.priority}">${PRI[t.priority] || ''}</td>
+      <td>${state.canWrite ? `<button data-act="finish-task" data-id="${esc(c.code)}" data-item="${t.id}">完成</button>` : ''}</td></tr>`).join('')}
   </table></div>`;
 }
 
-/* ============ 页面：周检视 ============ */
+/* ===================== 页面：周检视 ===================== */
 function renderReview() {
-  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-  const in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-  const logs = db.companies.flatMap(c => c.logs.filter(l => l.date >= weekAgo).map(l => ({ c, l })))
-    .sort((a, b) => b.l.date.localeCompare(a.l.date));
-  const upcoming = db.companies.flatMap(c => c.tasks.filter(t => !t.done && t.due && t.due <= in7).map(t => ({ c, t })));
-  const risks = db.companies.flatMap(c => c.risks.filter(r => !r.closed && r.level === 'high').map(r => ({ c, r })));
+  const weekAgo = localDate(-7), in7 = localDate(7);
+  const C = state.companies;
+  const logs = C.flatMap(c => c.logs.filter(l => l.date >= weekAgo).map(l => ({ c, l }))).sort((a, b) => b.l.date.localeCompare(a.l.date));
+  const upcoming = C.flatMap(c => c.tasks.filter(t => !t.done && t.due && t.due <= in7).map(t => ({ c, t })));
+  const risks = C.flatMap(c => c.risks.filter(r => !r.closed && r.level === 'high').map(r => ({ c, r })));
   return `
-  <h2>📅 本周要完成 / 已逾期（截至 ${in7}）</h2>${crossTaskTable(upcoming)}
-  <h2>🔥 高风险事项</h2>
+  <h2 style="margin-top:4px">本周到期和已逾期的待办（截至 <span class="num">${in7}</span>）</h2>${crossTaskTable(upcoming)}
+  <h2>高风险事项</h2>
   <div class="card">${risks.length ? risks.map(({ c, r }) => `<div class="list-item"><span class="code">${esc(c.code)}</span>
-    <div class="grow"><div>${esc(r.text)}</div><div class="sub">应对：${esc(r.plan || '未定')}</div></div></div>`).join('') : '<div class="empty">无高风险</div>'}</div>
-  <h2>📝 过去 7 天进展</h2>
+    <div class="grow"><div>${esc(r.text)}</div><div class="sub">应对：${esc(r.plan || '未定')}</div></div></div>`).join('') : '<div class="empty">没有未解决的高风险事项</div>'}</div>
+  <h2>过去 7 天的进展</h2>
   <div class="card">${logs.length ? logs.map(({ c, l }) => `<div class="list-item"><span class="code">${esc(c.code)}</span>
     <div class="grow">${esc(l.text).replace(/\n/g, '<br>')}</div><span class="date">${l.date}</span></div>`).join('') : '<div class="empty">这周还没有进展记录</div>'}</div>
-  <h2>📊 各公司状态一览</h2>
+  <h2>各公司状态一览</h2>
   <div class="card table-wrap"><table><tr><th>公司</th><th>类型</th><th>阶段</th><th>健康度</th><th>里程碑</th><th>逾期</th><th>最近更新</th></tr>
-    ${db.companies.map(c => { const s = summary(c); return `<tr><td><b>${esc(c.code)}</b> ${esc(c.cn)}</td><td>${TYPES[c.type]}</td>
-      <td>${esc(STAGES[c.type][c.stage])}</td><td><span class="health ${c.health}">${HEALTH[c.health]}</span></td>
-      <td>${s.progress}%</td><td class="${s.overdue ? 'warn' : ''}">${s.overdue}</td><td>${s.lastLog || '—'}</td></tr>`; }).join('')}
+    ${C.map(c => { const s = summary(c); return `<tr><td><b class="mono">${esc(c.code)}</b> ${esc(c.cn)}</td><td>${TYPES[c.type]}</td>
+      <td>${esc(STAGES[c.type][c.stage])}</td><td>${healthChip(c.health)}</td>
+      <td class="num">${s.progress}%</td><td class="num ${s.overdue ? 'warn' : ''}">${s.overdue}</td><td class="date">${s.lastLog || '—'}</td></tr>`; }).join('')}
   </table></div>`;
 }
 
-/* ============ 页面：公司详情 ============ */
+/* ===================== 页面：公司详情 ===================== */
 function renderDetail() {
   const c = co(view.id);
+  if (!c) { view = { page: 'overview', id: null, tab: 'overview' }; return renderOverview(); }
   const s = summary(c);
-  const tabs = { overview: '概况', milestones: `里程碑 (${s.msText})`, tasks: `待办 (${s.open})`, logs: `进展日志 (${c.logs.length})`, risks: `风险 (${s.risks})` };
+  const tabs = { overview: '概况', milestones: `里程碑 ${s.msText}`, tasks: `待办 ${s.open}`, logs: `进展日志 ${c.logs.length}`, risks: `风险 ${s.risks}` };
   return `
   <div class="card">
     <div class="detail-head">
       <div class="title-row"><span class="code">${esc(c.code)}</span>
-        <div><div class="cname" style="font-size:17px">${esc(c.name)}</div><div class="sub">${esc(c.cn)} · ${esc(c.industry)}</div></div></div>
-      <div><span class="tag">${TYPES[c.type]}</span><span class="health ${c.health}">${HEALTH[c.health]}</span></div>
+        <div style="min-width:0"><div class="cname">${esc(c.name)}</div><div class="sub">${esc(c.cn)} · ${esc(c.industry)}</div></div></div>
+      <div class="chips"><span class="tag">${TYPES[c.type]}</span>${healthChip(c.health)}</div>
     </div>
     ${pipeline(c, true)}
-    <div class="sub">点击上方阶段可切换当前阶段</div>
+    ${state.canWrite ? '<div class="sub" style="margin-top:6px">点击阶段即可切换当前所处阶段</div>' : ''}
   </div>
-  <div class="tabs">${Object.entries(tabs).map(([k, v]) => `<button class="${view.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${v}</button>`).join('')}</div>
+  <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${view.tab === k}" class="${view.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${v}</button>`).join('')}</div>
   ${({ overview: tabOverview, milestones: tabMilestones, tasks: tabTasks, logs: tabLogs, risks: tabRisks })[view.tab](c)}`;
 }
+
+const opt = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${v}</option>`).join('');
 
 function tabOverview(c) {
   return `<div class="two">
     <div class="card"><h3>基本信息</h3>
-      <label>公司全名</label><input data-field="name" value="${esc(c.name)}">
-      <label>简称 / 说明</label><input data-field="cn" value="${esc(c.cn)}">
-      <label>行业</label><input data-field="industry" value="${esc(c.industry)}">
+      <label for="f-name">公司全名</label><input id="f-name" data-field="name" value="${esc(c.name)}" ${ro()}>
+      <label for="f-cn">简称 / 说明</label><input id="f-cn" data-field="cn" value="${esc(c.cn)}" ${ro()}>
+      <label for="f-industry">行业</label><input id="f-industry" data-field="industry" value="${esc(c.industry)}" ${ro()}>
       <div class="row">
-        <div><label>类型</label><select data-field="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${c.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
-        <div><label>健康度</label><select data-field="health">${Object.entries(HEALTH).map(([k, v]) => `<option value="${k}" ${c.health === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+        <div><label for="f-type">类型</label><select id="f-type" data-field="type" ${ro()}>${opt(TYPES, c.type)}</select></div>
+        <div><label for="f-health">健康度</label><select id="f-health" data-field="health" ${ro()}>${opt(HEALTH, c.health)}</select></div>
       </div>
-      <label>负责人</label><input data-field="owner" value="${esc(c.owner)}" placeholder="例如：总经理姓名">
-      <label>本期重点（一句话）</label><textarea data-field="focus" placeholder="这个月/季度最重要的一件事">${esc(c.focus)}</textarea>
+      <label for="f-owner">负责人</label><input id="f-owner" data-field="owner" value="${esc(c.owner)}" placeholder="例如：总经理姓名" ${ro()}>
+      <label for="f-focus">本期重点（一句话）</label><textarea id="f-focus" data-field="focus" placeholder="这个月或这个季度最重要的一件事" ${ro()}>${esc(c.focus)}</textarea>
     </div>
     <div class="card"><h3>关键指标 KPI</h3>
       ${c.kpis.length ? `<div class="table-wrap"><table><tr><th>指标</th><th>目标</th><th>实际</th><th>达成</th><th></th></tr>
         ${c.kpis.map(k => { const pct = Number(k.target) ? Math.round(Number(k.actual) / Number(k.target) * 100) : null; return `<tr>
-          <td>${esc(k.name)}</td>
-          <td>${esc(k.target)} ${esc(k.unit)}</td>
-          <td><input class="narrow" style="width:90px" data-kpi="${k.id}" value="${esc(k.actual)}"></td>
-          <td class="${pct !== null && pct < 70 ? 'warn' : ''}">${pct === null ? '—' : pct + '%'}</td>
-          <td><button class="ghost" data-act="del" data-list="kpis" data-item="${k.id}">✕</button></td></tr>`; }).join('')}
-      </table></div>` : '<div class="empty">还没有指标，例如：月营业额、在手合同额、订单数、现金余额</div>'}
-      <form data-form="kpis" class="row" style="margin-top:10px">
-        <input name="name" placeholder="指标名称" required>
-        <input name="target" placeholder="目标" class="narrow" style="width:80px">
-        <input name="unit" placeholder="单位" class="narrow" style="width:70px">
+          <td>${esc(k.name)}</td><td class="num">${esc(k.target)} ${esc(k.unit)}</td>
+          <td><input class="kpi-in num" id="kpi-${k.id}" data-kpi="${k.id}" value="${esc(k.actual)}" inputmode="decimal" aria-label="${esc(k.name)} 实际" ${ro()}></td>
+          <td class="num ${pct !== null && pct < 70 ? 'warn' : ''}">${pct === null || !String(k.actual).trim() ? '—' : pct + '%'}</td>
+          <td>${delBtn('kpis', k.id)}</td></tr>`; }).join('')}
+      </table></div>` : '<div class="empty">还没有指标。可以加：月营业额、在手合同额、订单数、现金余额、可撑月数。</div>'}
+      ${state.canWrite ? `<form data-form="kpis" id="form-kpis" class="row" style="margin-top:10px">
+        <input name="name" id="kpis-name" placeholder="指标名称" required aria-label="指标名称">
+        <input name="target" id="kpis-target" placeholder="目标" class="w-sm" inputmode="decimal" aria-label="目标">
+        <input name="unit" id="kpis-unit" placeholder="单位" class="w-sm" aria-label="单位">
         <button class="primary">添加</button>
-      </form>
+      </form>` : ''}
     </div>
   </div>`;
 }
 
 function tabMilestones(c) {
-  const ms = [...c.milestones].sort((a, b) => (a.done - b.done) || (a.due || '9').localeCompare(b.due || '9'));
+  const ms = [...c.milestones].sort((a, b) => (a.done - b.done) || byDue(a, b));
   return `<div class="card">
-    <form data-form="milestones" class="row">
-      <input name="title" placeholder="里程碑，例如：取得营业执照 / 第一台样车 / 首单签约" required>
-      <input name="due" type="date" class="narrow" style="width:160px">
+    ${state.canWrite ? `<form data-form="milestones" id="form-milestones" class="row">
+      <input name="title" id="milestones-title" placeholder="例如：取得营业执照 / 第一台样车 / 首单签约" required aria-label="里程碑">
+      <input name="due" id="milestones-due" type="date" class="w-date" aria-label="目标日期">
       <button class="primary">添加</button>
-    </form>
+    </form>` : ''}
     ${ms.length ? ms.map(m => `<div class="list-item">
-      <input type="checkbox" data-act="toggle" data-list="milestones" data-item="${m.id}" ${m.done ? 'checked' : ''}>
-      <div class="grow" style="${m.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">${esc(m.title)}</div>
+      <input type="checkbox" data-act="toggle" data-list="milestones" data-item="${m.id}" ${m.done ? 'checked' : ''} ${ro()} aria-label="完成">
+      <div class="grow ${m.done ? 'struck' : ''}">${esc(m.title)}</div>
       <span class="date ${isOverdue(m) ? 'warn' : ''}">${m.due || ''}</span>
-      <button class="ghost" data-act="del" data-list="milestones" data-item="${m.id}">✕</button></div>`).join('') : '<div class="empty">还没有里程碑</div>'}
+      ${delBtn('milestones', m.id)}</div>`).join('') : '<div class="empty">还没有里程碑</div>'}
   </div>`;
 }
 
 function tabTasks(c) {
-  const ts = [...c.tasks].sort((a, b) => (a.done - b.done) || (a.due || '9').localeCompare(b.due || '9'));
+  const ts = [...c.tasks].sort((a, b) => (a.done - b.done) || byDue(a, b));
   return `<div class="card">
-    <form data-form="tasks" class="row">
-      <input name="title" placeholder="待办事项" required style="flex:3">
-      <input name="owner" placeholder="负责人">
-      <input name="due" type="date" class="narrow" style="width:160px">
-      <select name="priority" class="narrow" style="width:80px"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
+    ${state.canWrite ? `<form data-form="tasks" id="form-tasks" class="row">
+      <input name="title" id="tasks-title" placeholder="待办事项" required style="flex-basis:220px" aria-label="待办事项">
+      <input name="owner" id="tasks-owner" placeholder="负责人" aria-label="负责人">
+      <input name="due" id="tasks-due" type="date" class="w-date" aria-label="截止日期">
+      <select name="priority" id="tasks-priority" class="w-sm" aria-label="优先级">${opt(PRI, 'mid')}</select>
       <button class="primary">添加</button>
-    </form>
+    </form>` : ''}
     ${ts.length ? `<div class="table-wrap"><table><tr><th></th><th>事项</th><th>负责人</th><th>截止</th><th>优先级</th><th></th></tr>
       ${ts.map(t => `<tr class="${t.done ? 'done' : ''}">
-        <td><input type="checkbox" data-act="toggle" data-list="tasks" data-item="${t.id}" ${t.done ? 'checked' : ''}></td>
-        <td>${esc(t.title)}</td><td>${esc(t.owner)}</td>
-        <td class="${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td>
-        <td class="pri-${t.priority}">${PRI[t.priority]}</td>
-        <td><button class="ghost" data-act="del" data-list="tasks" data-item="${t.id}">✕</button></td></tr>`).join('')}
+        <td><input type="checkbox" data-act="toggle" data-list="tasks" data-item="${t.id}" ${t.done ? 'checked' : ''} ${ro()} aria-label="完成"></td>
+        <td class="t">${esc(t.title)}</td><td>${esc(t.owner)}</td>
+        <td class="date ${isOverdue(t) ? 'warn' : ''}">${esc(t.due || '—')}</td>
+        <td class="pri-${t.priority}">${PRI[t.priority] || ''}</td>
+        <td>${delBtn('tasks', t.id)}</td></tr>`).join('')}
     </table></div>` : '<div class="empty">还没有待办</div>'}
   </div>`;
 }
 
 function tabLogs(c) {
   const ls = [...c.logs].sort((a, b) => b.date.localeCompare(a.date));
-  return `<div class="card">
-    <form data-form="logs">
-      <div class="row"><input name="date" type="date" value="${today()}" class="narrow" style="width:160px"></div>
-      <label>进展 / 会议纪要 / 决定</label>
-      <textarea name="text" required placeholder="这次有什么进展？卡在哪里？做了什么决定？"></textarea>
+  return `${state.canWrite ? `<div class="card">
+    <form data-form="logs" id="form-logs">
+      <div class="row"><input name="date" id="logs-date" type="date" value="${today()}" class="w-date" aria-label="日期"></div>
+      <label for="logs-text">进展 / 会议纪要 / 决定</label>
+      <textarea name="text" id="logs-text" required placeholder="这次有什么进展？卡在哪里？做了什么决定？"></textarea>
       <div style="margin-top:8px"><button class="primary">记录</button></div>
     </form>
-  </div>
+  </div>` : ''}
   <div class="card" style="margin-top:14px">
     ${ls.length ? ls.map(l => `<div class="list-item"><span class="date">${l.date}</span>
       <div class="grow">${esc(l.text).replace(/\n/g, '<br>')}</div>
-      <button class="ghost" data-act="del" data-list="logs" data-item="${l.id}">✕</button></div>`).join('') : '<div class="empty">还没有进展记录</div>'}
+      ${delBtn('logs', l.id)}</div>`).join('') : '<div class="empty">还没有进展记录</div>'}
   </div>`;
 }
 
 function tabRisks(c) {
   const rs = [...c.risks].sort((a, b) => a.closed - b.closed);
-  const lv = { high: '高', mid: '中', low: '低' };
   return `<div class="card">
-    <form data-form="risks">
+    ${state.canWrite ? `<form data-form="risks" id="form-risks">
       <div class="row">
-        <input name="text" placeholder="风险 / 问题，例如：现金流只够 3 个月" required style="flex:3">
-        <select name="level" class="narrow" style="width:80px"><option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option></select>
+        <input name="text" id="risks-text" placeholder="风险或问题，例如：现金流只够 3 个月" required style="flex-basis:220px" aria-label="风险">
+        <select name="level" id="risks-level" class="w-sm" aria-label="等级">${opt(PRI, 'mid')}</select>
       </div>
-      <div class="row" style="margin-top:8px"><input name="plan" placeholder="应对措施"><button class="primary">添加</button></div>
-    </form>
+      <div class="row" style="margin-top:8px"><input name="plan" id="risks-plan" placeholder="应对措施" aria-label="应对措施"><button class="primary">添加</button></div>
+    </form>` : ''}
     ${rs.length ? rs.map(r => `<div class="list-item">
-      <input type="checkbox" title="已解决" data-act="toggle-risk" data-item="${r.id}" ${r.closed ? 'checked' : ''}>
-      <div class="grow" style="${r.closed ? 'text-decoration:line-through;color:var(--muted)' : ''}">
-        <div><span class="pri-${r.level}">[${lv[r.level]}]</span> ${esc(r.text)}</div>
+      <input type="checkbox" title="已解决" aria-label="已解决" data-act="toggle-risk" data-item="${r.id}" ${r.closed ? 'checked' : ''} ${ro()}>
+      <div class="grow ${r.closed ? 'struck' : ''}">
+        <div><span class="pri-${r.level}">[${PRI[r.level] || ''}]</span> ${esc(r.text)}</div>
         <div class="sub">应对：${esc(r.plan || '未定')}</div></div>
-      <button class="ghost" data-act="del" data-list="risks" data-item="${r.id}">✕</button></div>`).join('') : '<div class="empty">没有登记风险</div>'}
+      ${delBtn('risks', r.id)}</div>`).join('') : '<div class="empty">没有登记风险</div>'}
   </div>`;
 }
 
-/* ============ 渲染 & 事件 ============ */
-function render() {
-  const nav = document.getElementById('nav');
-  nav.innerHTML = `
-    <button class="${view.page === 'overview' ? 'active' : ''}" data-act="page" data-page="overview">总览</button>
-    <button class="${view.page === 'review' ? 'active' : ''}" data-act="page" data-page="review">周检视</button>
-    ${db.companies.map(c => `<button class="${view.page === 'detail' && view.id === c.id ? 'active' : ''}" data-act="open" data-id="${c.id}">${esc(c.code)}</button>`).join('')}
-    <button data-act="export" title="下载备份文件">导出</button>
-    <button data-act="import" title="从备份文件恢复">导入</button>`;
-  const app = document.getElementById('app');
-  app.innerHTML = (view.page === 'overview' ? renderOverview() : view.page === 'review' ? renderReview() : renderDetail())
-    + `<div class="note">数据保存在本浏览器中。换电脑或清理浏览器前，请先点「导出」备份。</div>`;
+/* ===================== 渲染 ===================== */
+function banners() {
+  const out = [];
+  if (state.mode === 'local') out.push('<div class="banner warn">本地模式：现在打开的是离线版，数据只保存在这台设备的浏览器里。在 claude.ai 上打开这个页面，手机、平板、电脑会看到同一份数据。</div>');
+  if (state.mode === 'db' && state.slow) out.push('<div class="banner warn">暂时连不上数据，显示的内容可能不是最新的。</div>');
+  if (state.mode === 'db' && !state.canWrite) out.push('<div class="banner">你现在是查看权限，只能看不能改。</div>');
+  if (state.error) out.push(`<div class="banner warn">${esc(state.error)}</div>`);
+  if (state.pendingImport) out.push(`<div class="banner warn confirm-bar"><span>导入 <b>${state.pendingImport.length}</b> 家公司的备份，会覆盖这些公司的当前数据。</span>
+    <button class="primary" data-act="import-yes">确认导入</button><button data-act="import-no">取消</button></div>`);
+  return out.join('');
 }
 
+function captureForm() {
+  const a = document.activeElement;
+  const vals = {};
+  document.querySelectorAll('#app form [id]').forEach(el => { vals[el.id] = el.value; });
+  return { vals, focus: a && a.id ? { id: a.id, value: a.value, s: a.selectionStart, e: a.selectionEnd } : null };
+}
+function restoreForm(snap) {
+  Object.entries(snap.vals).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+  if (snap.focus) {
+    const el = document.getElementById(snap.focus.id);
+    if (el) { if ('value' in el && snap.focus.value !== undefined) el.value = snap.focus.value; el.focus(); try { el.setSelectionRange(snap.focus.s, snap.focus.e); } catch {} }
+  }
+}
+
+function render() {
+  const snap = captureForm();
+  const navBtn = (act, attrs, label, on) => `<button class="${on ? 'active' : ''}" data-act="${act}" ${attrs}>${label}</button>`;
+  document.getElementById('nav').innerHTML =
+    navBtn('page', 'data-page="overview"', '总览', view.page === 'overview') +
+    navBtn('page', 'data-page="review"', '周检视', view.page === 'review') +
+    state.companies.map(c => navBtn('open', `data-id="${esc(c.code)}" title="${esc(c.name)}"`, esc(c.code), view.page === 'detail' && view.id === c.code)).join('') +
+    (state.companies.length ? '<button data-act="export" title="下载备份文件">导出</button>' : '') +
+    (state.canWrite && state.mode !== 'loading' ? '<button data-act="import" title="从备份文件恢复">导入</button>' : '');
+  const app = document.getElementById('app');
+  if (state.mode === 'loading') { app.innerHTML = banners() + '<div class="card empty">正在载入公司数据…</div>'; return; }
+  app.innerHTML = banners()
+    + (view.page === 'overview' ? renderOverview() : view.page === 'review' ? renderReview() : renderDetail())
+    + `<div class="foot">${state.mode === 'db' ? '数据自动保存，手机、平板、电脑同步。建议每月「导出」一次做备份。' : '数据保存在本浏览器中，请定期「导出」备份。'}</div>`;
+  restoreForm(snap);
+}
+
+/* ===================== 事件 ===================== */
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
+  const act = el && el.dataset.act;
+  if (act !== 'del-ask' && act !== 'del' && state.pendingDel) { state.pendingDel = null; if (!el) return render(); }
   if (!el) return;
-  const act = el.dataset.act;
-  const c = view.id ? co(view.id) : null;
-  if (act === 'page') view = { page: el.dataset.page, id: null, tab: 'overview' };
-  else if (act === 'open') view = { page: 'detail', id: el.dataset.id, tab: 'overview' };
-  else if (act === 'tab') view.tab = el.dataset.tab;
-  else if (act === 'stage') { c.stage = Number(el.dataset.i); save(); }
-  else if (act === 'toggle') { const it = c[el.dataset.list].find(x => x.id === el.dataset.item); it.done = !it.done; save(); }
-  else if (act === 'toggle-risk') { const it = c.risks.find(x => x.id === el.dataset.item); it.closed = !it.closed; save(); }
-  else if (act === 'toggle-task') { const t = co(el.dataset.id).tasks.find(x => x.id === el.dataset.item); t.done = true; save(); }
-  else if (act === 'del') { if (!confirm('确定删除？')) return; c[el.dataset.list] = c[el.dataset.list].filter(x => x.id !== el.dataset.item); save(); }
-  else if (act === 'export') return exportData();
-  else if (act === 'import') return document.getElementById('importFile').click();
-  else return;
+  const code = view.id;
+  switch (act) {
+    case 'page': view = { page: el.dataset.page, id: null, tab: 'overview' }; break;
+    case 'open': view = { page: 'detail', id: el.dataset.id, tab: 'overview' }; window.scrollTo(0, 0); break;
+    case 'tab': view.tab = el.dataset.tab; break;
+    case 'stage': return mutate(code, c => { c.stage = Number(el.dataset.i); });
+    case 'toggle': return mutate(code, c => { const it = c[el.dataset.list].find(x => x.id === el.dataset.item); if (it) it.done = !it.done; });
+    case 'toggle-risk': return mutate(code, c => { const it = c.risks.find(x => x.id === el.dataset.item); if (it) it.closed = !it.closed; });
+    case 'finish-task': return mutate(el.dataset.id, c => { const t = c.tasks.find(x => x.id === el.dataset.item); if (t) t.done = true; });
+    case 'del-ask': state.pendingDel = el.dataset.key; break;
+    case 'del': state.pendingDel = null; return mutate(code, c => { c[el.dataset.list] = c[el.dataset.list].filter(x => x.id !== el.dataset.item); });
+    case 'export': return exportData();
+    case 'import': return document.getElementById('importFile').click();
+    case 'import-yes': {
+      const list = state.pendingImport; state.pendingImport = null;
+      list.forEach(raw => {
+        const c = normalize(raw);
+        const i = state.companies.findIndex(x => x.code === c.code);
+        if (i >= 0) state.companies[i] = c; else state.companies.push(c);
+        if (state.mode === 'db') persist(c);
+      });
+      setCompanies(state.companies);
+      if (state.mode === 'local') persist(null);
+      view = { page: 'overview', id: null, tab: 'overview' };
+      break;
+    }
+    case 'import-no': state.pendingImport = null; break;
+    default: return;
+  }
   render();
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('company-card')) { e.preventDefault(); e.target.click(); }
 });
 
 document.addEventListener('change', e => {
   const el = e.target;
-  const c = view.id ? co(view.id) : null;
-  if (!c) return;
   if (el.dataset.field) {
-    c[el.dataset.field] = el.value;
-    if (el.dataset.field === 'type') c.stage = Math.min(c.stage, STAGES[c.type].length - 1);
-    save(); render();
+    const f = el.dataset.field, v = el.value;
+    mutate(view.id, c => { c[f] = v; if (f === 'type') c.stage = Math.min(c.stage, STAGES[c.type].length - 1); });
   } else if (el.dataset.kpi) {
-    c.kpis.find(k => k.id === el.dataset.kpi).actual = el.value; save(); render();
+    const id = el.dataset.kpi, v = el.value;
+    mutate(view.id, c => { const k = c.kpis.find(x => x.id === id); if (k) k.actual = v; });
   }
 });
 
@@ -403,37 +538,81 @@ document.addEventListener('submit', e => {
   const form = e.target.closest('[data-form]');
   if (!form) return;
   e.preventDefault();
-  const c = co(view.id);
+  const list = form.dataset.form;
   const item = { id: uid(), ...Object.fromEntries(new FormData(form)) };
-  if (form.dataset.form === 'kpis') item.actual = '';
-  if (['milestones', 'tasks'].includes(form.dataset.form)) item.done = false;
-  if (form.dataset.form === 'risks') item.closed = false;
-  c[form.dataset.form].push(item);
-  save(); render();
+  Object.keys(item).forEach(k => { if (typeof item[k] === 'string') item[k] = item[k].trim(); });
+  if (list === 'kpis') item.actual = '';
+  if (list === 'milestones' || list === 'tasks') item.done = false;
+  if (list === 'risks') item.closed = false;
+  if (list === 'logs' && !item.date) item.date = today();
+  form.reset();
+  form.querySelectorAll('[id]').forEach(x => { x.value = x.defaultValue; });
+  mutate(view.id, c => { c[list].push(item); });
 });
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `公司管理器备份-${today()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+async function exportData() {
+  const json = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), companies: state.companies }, null, 2);
+  const filename = `company-manager-backup-${today()}.json`;
+  if (downloads) {
+    try { await downloads.save({ filename, data: json }); } catch (err) { if (err && err.code !== 'declined') { state.error = '导出没有成功，请稍后再试。'; render(); } }
+    return;
+  }
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch { state.error = '这里不能直接下载文件。'; render(); }
 }
 
 document.getElementById('importFile').addEventListener('change', async e => {
   const f = e.target.files[0];
+  e.target.value = '';
   if (!f) return;
   try {
     const data = JSON.parse(await f.text());
-    if (!Array.isArray(data.companies)) throw new Error();
-    if (!confirm('导入会覆盖当前所有数据，确定吗？')) return;
-    db = data; save(); view = { page: 'overview', id: null, tab: 'overview' }; render();
-  } catch { alert('文件格式不正确'); }
-  e.target.value = '';
+    const list = Array.isArray(data) ? data : data.companies;
+    if (!Array.isArray(list) || !list.every(x => x && x.code)) throw new Error();
+    state.pendingImport = list.map(x => { const { id, ...rest } = x; return rest; });
+  } catch { state.error = '这个文件不是管理器的备份文件，请选择「导出」得到的 .json 文件。'; }
+  render();
 });
 
-render();
+/* ===================== 启动 ===================== */
+function startLocal() {
+  state.mode = 'local';
+  let list = null;
+  try { list = JSON.parse(localStorage.getItem(LOCAL_KEY)); } catch {}
+  if (list && !Array.isArray(list) && Array.isArray(list.companies)) list = list.companies; // v1 file format
+  setCompanies(Array.isArray(list) && list.length ? list.map(x => ({ code: x.code || x.id, ...x })) : localSeed());
+  render();
+}
+
+async function start() {
+  render();
+  for (let i = 0; i < 15 && !(window.claude && typeof window.claude.use === 'function'); i++) await new Promise(r => setTimeout(r, 100));
+  if (!window.claude || typeof window.claude.use !== 'function') return startLocal();
+  store = await window.claude.use('db').catch(() => null);
+  if (!store) return startLocal();
+  window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
+  window.claude.use('user').then(async u => {
+    if (!u) return;
+    try { const ok = await u.can('data.write'); if (ok === false) { state.canWrite = false; render(); } } catch {}
+  }).catch(() => {});
+
+  state.mode = 'db';
+  render();
+  let gotLive = false;
+  const timer = setTimeout(() => { if (!gotLive) { state.slow = true; render(); } }, 10000);
+  store.collection('companies').onSnapshot(snap => {
+    setCompanies(snap.docs.filter(d => d.exists).map(d => ({ ...d.data(), code: d.id })));
+    if (!snap.metadata.fromCache) { gotLive = true; clearTimeout(timer); state.slow = false; }
+    render();
+  }, err => {
+    clearTimeout(timer);
+    state.slow = false;
+    state.error = err && err.code === 'revoked' ? '' : '数据连接中断，请刷新页面。';
+    render();
+  });
+}
+start();
 </script>
-</body>
-</html>
