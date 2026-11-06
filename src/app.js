@@ -48,6 +48,10 @@ const I18N = {
     moveL: '往前移', moveR: '往后移', delDept: '删除部门', expand: '展开 / 收起',
     sumOpen: '未完成', sumOverdue: '已逾期', sumDone: '已完成', deptTasks: '部门 task',
     dueLabel: '日期时间', levelLabel: '等级',
+    appearance: '外观', thAuto: '跟随系统', thLight: '白天', thDark: '暗黑', thCustom: '自定义',
+    thBase: '底色', thAccent: '主题色', thBg: '背景色', thReset: '恢复默认颜色',
+    logoUpload: '上传 Logo', logoChange: '更换 Logo', logoRemove: '移除 Logo', logoHint: '支持 PNG、JPG、SVG 等图片，会自动缩小。',
+    logoErr: '这张图片无法使用，请换一张 PNG 或 JPG 图片。',
     people: '负责人名单', peopleHint: '在 task 里输入新名字会自动加入名单。', addPerson: '添加负责人', personPh: '负责人名字',
     allOwners: '全部负责人', noOwner: '未指定负责人', ownerSel: '负责人', removePerson: n => `从名单移除 ${n}`,
     loginTitle: '登录', email: '邮箱', password: '密码', loginBtn: '登录', loggingIn: '正在登录…', forgot: '忘记密码？',
@@ -104,6 +108,10 @@ const I18N = {
     moveL: 'Move earlier', moveR: 'Move later', delDept: 'Delete department', expand: 'Expand / collapse',
     sumOpen: 'Open', sumOverdue: 'Overdue', sumDone: 'Done', deptTasks: 'Department tasks',
     dueLabel: 'Date & time', levelLabel: 'Level',
+    appearance: 'Appearance', thAuto: 'System', thLight: 'Light', thDark: 'Dark', thCustom: 'Custom',
+    thBase: 'Base', thAccent: 'Accent colour', thBg: 'Background', thReset: 'Reset colours',
+    logoUpload: 'Upload logo', logoChange: 'Change logo', logoRemove: 'Remove logo', logoHint: 'PNG, JPG, SVG and other images work; they are shrunk automatically.',
+    logoErr: 'This image cannot be used. Try a PNG or JPG file.',
     people: 'Owners', peopleHint: 'Typing a new name on a task adds it to this list.', addPerson: 'Add owner', personPh: 'Owner name',
     allOwners: 'All owners', noOwner: 'No owner', ownerSel: 'Owner', removePerson: n => `Remove ${n} from the list`,
     loginTitle: 'Sign in', email: 'Email', password: 'Password', loginBtn: 'Sign in', loggingIn: 'Signing in…', forgot: 'Forgot password?',
@@ -118,6 +126,40 @@ const I18N = {
 let lang = 'zh';
 try { lang = localStorage.getItem('cm-lang') === 'en' ? 'en' : 'zh'; } catch {}
 const L = () => I18N[lang];
+
+/* ---------- appearance: auto / light / dark / custom (per device) ---------- */
+const THEME_DEFAULT = { mode: 'auto', base: 'light', accent: '#24548f', bg: '' };
+const SWATCHES = ['#24548f', '#0f766e', '#15803d', '#b45309', '#c2410c', '#be123c', '#7c3aed', '#334155'];
+let theme = { ...THEME_DEFAULT };
+try { Object.assign(theme, JSON.parse(localStorage.getItem('cm-theme') || '{}')); } catch {}
+const saveTheme = () => { try { localStorage.setItem('cm-theme', JSON.stringify(theme)); } catch {} };
+const hexOk = h => /^#[0-9a-f]{6}$/i.test(h || '');
+function applyTheme() {
+  const r = document.documentElement, st = r.style;
+  ['--accent', '--accent-soft', '--accent-ink', '--bg', '--panel', '--line'].forEach(v => st.removeProperty(v));
+  const base = theme.mode === 'custom' ? theme.base : theme.mode;
+  if (base === 'light' || base === 'dark') r.setAttribute('data-theme', base); else r.removeAttribute('data-theme');
+  if (theme.mode === 'custom') {
+    const dark = theme.base === 'dark';
+    if (hexOk(theme.accent)) {
+      const a = theme.accent;
+      // pick readable text on the accent
+      const n = parseInt(a.slice(1), 16), lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+      st.setProperty('--accent', dark ? `color-mix(in srgb, ${a} 70%, white)` : a);
+      st.setProperty('--accent-ink', (dark ? lum > 0.35 : lum > 0.62) ? '#10141a' : '#ffffff');
+      st.setProperty('--accent-soft', `color-mix(in srgb, ${a} ${dark ? 22 : 12}%, ${dark ? '#1b201e' : '#ffffff'})`);
+    }
+    if (hexOk(theme.bg)) {
+      st.setProperty('--bg', theme.bg);
+      st.setProperty('--panel', dark ? `color-mix(in srgb, ${theme.bg} 88%, white)` : `color-mix(in srgb, ${theme.bg} 25%, white)`);
+      st.setProperty('--line', dark ? `color-mix(in srgb, ${theme.bg} 78%, white)` : `color-mix(in srgb, ${theme.bg} 85%, black)`);
+    }
+  }
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.content = getComputedStyle(r).getPropertyValue('--panel').trim() || '#24548f';
+}
+applyTheme();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch {}
 
 /* ===================== 常量 ===================== */
 const LOCAL_KEY = 'company-manager-v2', LOCAL_KEY_V1 = 'company-manager-v1';
@@ -337,6 +379,34 @@ function summary(c) {
     lastLog, stale: lastLog ? daysBetween(lastLog, today()) : null,
   };
 }
+/* company badge: uploaded logo, or the company letter */
+function badge(code, size = '') {
+  const c = co(code), cls = 'code' + (size ? ' ' + size : '');
+  const name = c ? c.name : code;
+  return c && c.logo
+    ? `<span class="${cls} has-logo" title="${esc(name)}"><img src="${esc(c.logo)}" alt="${esc(name)}"></span>`
+    : `<span class="${cls}" title="${esc(name)}">${esc(code)}</span>`;
+}
+const LOGO_PX = 256;
+/* shrink an uploaded image to a small square (keeps its shape, transparent padding) */
+async function logoFromFile(file) {
+  if (!file || !/^image\//.test(file.type)) throw new Error('type');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    const cv = document.createElement('canvas'); cv.width = cv.height = LOGO_PX;
+    const g = cv.getContext('2d');
+    const k = Math.min(LOGO_PX / img.naturalWidth, LOGO_PX / img.naturalHeight);
+    const w = img.naturalWidth * k, h = img.naturalHeight * k;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, (LOGO_PX - w) / 2, (LOGO_PX - h) / 2, w, h);
+    let out = cv.toDataURL('image/webp', 0.9);
+    if (!out.startsWith('data:image/webp')) out = cv.toDataURL('image/png');
+    if (out.length > 400000) throw new Error('size');
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+let logoTarget = null;
 const healthChip = h => `<span class="health ${h}">${esc(L().health[h])}</span>`;
 function pipeline(c, clickable) {
   return `<div class="pipeline">${L().stages[c.type].map((s, i) => {
@@ -358,7 +428,7 @@ function delBtn(kind, id) {
 function taskMeta(t, showCompany = true) {
   const m = [];
   m.push(`<span class="tag ${t.kind === 'followup' ? 'follow' : ''}">${esc(L().kinds[t.kind])}</span>`);
-  if (showCompany && t.company) m.push(`<span class="code sm" title="${esc(co(t.company)?.name || '')}">${esc(t.company)}</span>`);
+  if (showCompany && t.company) m.push(badge(t.company, 'sm'));
   if (t.priority !== 'none') m.push(`<span class="pri ${t.priority}">${esc(L().pri[t.priority])}</span>`);
   if (t.owner) m.push(`<span>👤 ${esc(t.owner)}</span>`);
   if (t.start) m.push(`<span class="mono">▶ ${esc(t.start)}</span>`);
@@ -490,7 +560,7 @@ function renderOverview() {
   return `
   ${due.length ? `<h2>${SVG_BELL.replace('width="12" height="12"', 'width="16" height="16"')} ${esc(T.dueReminders)} <span class="badge">${due.length}</span></h2>
     <div class="card">${due.map(t => `<div class="list-item">
-      ${t.company ? `<span class="code sm">${esc(t.company)}</span>` : ''}
+      ${t.company ? badge(t.company, 'sm') : ''}
       <div class="grow"><div style="cursor:pointer" data-act="goto-task" data-tid="${t.id}" tabindex="0" role="button">${esc(t.title)}</div>
         <div class="sub mono">${esc(fmtRemind(t.remind))}${t.owner ? ' · ' + esc(t.owner) : ''}</div></div>
       ${state.canWrite ? `<div class="chips"><button class="small" data-act="t-snooze" data-tid="${t.id}">${esc(T.snooze)}</button><button class="small primary" data-act="t-done" data-tid="${t.id}">${esc(T.done)}</button></div>` : ''}
@@ -502,10 +572,9 @@ function renderOverview() {
   <h2>${esc(T.companies)}</h2>
   <div class="grid">${state.companies.map(c => { const s = summary(c); return `
     <div class="card company-card h-${c.health}" data-act="open" data-id="${esc(c.code)}" tabindex="0" role="button" aria-label="${esc(c.name)}">
-      <div class="title-row"><span class="code">${esc(c.code)}</span>
+      <div class="title-row">${badge(c.code)}
         <div style="min-width:0"><div class="cname">${esc(c.name)}</div><div class="sub">${esc(cDesc(c))}</div></div></div>
       <div class="chips"><span class="tag">${esc(T.types[c.type])}</span>${healthChip(c.health)}${s.due ? `<span class="tag due">${SVG_BELL} ${s.due}</span>` : ''}</div>
-      ${pipeline(c, false)}
       <div class="stats">
         <div><b>${s.todo}</b><span>${esc(T.openTodo)}</span></div>
         <div><b>${s.follow}</b><span>${esc(T.openFollow)}</span></div>
@@ -526,7 +595,7 @@ function pinCard(t) {
   const days = t.start ? daysBetween(t.start, today()) : null;
   return `<div class="card pin-card">
     <div class="title-row" style="align-items:flex-start;gap:8px">
-      ${t.company ? `<span class="code sm">${esc(t.company)}</span>` : ''}
+      ${t.company ? badge(t.company, 'sm') : ''}
       <div class="ttl grow" data-act="goto-task" data-tid="${t.id}" tabindex="0" role="button">${esc(t.title)}</div>
       <button class="icon-btn ${t.starred ? 'on-star' : ''}" data-act="t-star" data-tid="${t.id}" aria-label="${esc(t.starred ? T.unstar : T.star)}" title="${esc(t.starred ? T.unstar : T.star)}" ${ro()}>${SVG_STAR(t.starred)}</button>
       <button class="icon-btn on-pin" data-act="t-pin" data-tid="${t.id}" aria-label="${esc(T.unpin)}" title="${esc(T.unpin)}" ${ro()}>${SVG_PIN(true)}</button>
@@ -557,15 +626,15 @@ function renderReview() {
   <h2>${esc(T.rvRemind(localDate(7)))}</h2>${remind.length ? taskList(remind) : `<div class="card empty">${esc(T.none)}</div>`}
   <h2>${esc(T.rvStale)}</h2>${stale.length ? taskList(stale) : `<div class="card empty">${esc(T.none)}</div>`}
   <h2>${esc(T.rvHighRisk)}</h2>
-  <div class="card">${risks.length ? risks.map(({ c, r }) => `<div class="list-item"><span class="code sm">${esc(c.code)}</span>
+  <div class="card">${risks.length ? risks.map(({ c, r }) => `<div class="list-item">${badge(c.code, 'sm')}
     <div class="grow"><div>${esc(r.text)}</div><div class="sub">${esc(T.plan)}：${esc(r.plan || T.planNone)}</div></div></div>`).join('') : `<div class="empty">${esc(T.noHighRisk)}</div>`}</div>
   <h2>${esc(T.rvLogs)}</h2>
-  <div class="card">${logs.length ? logs.map(({ c, l }) => `<div class="list-item"><span class="code sm">${esc(c.code)}</span>
+  <div class="card">${logs.length ? logs.map(({ c, l }) => `<div class="list-item">${badge(c.code, 'sm')}
     <div class="grow">${esc(l.text).replace(/\n/g, '<br>')}</div><span class="date">${l.date}</span></div>`).join('') : `<div class="empty">${esc(T.noWeekLogs)}</div>`}</div>
   <h2>${esc(T.rvTable)}</h2>
-  <div class="card table-wrap"><table><tr><th>${esc(T.company)}</th><th>${esc(T.type)}</th><th>${esc(T.stage)}</th><th>${esc(T.healthL)}</th><th>${esc(T.openTodo)}</th><th>${esc(T.openFollow)}</th><th>${esc(T.lastLog)}</th></tr>
+  <div class="card table-wrap"><table><tr><th>${esc(T.company)}</th><th>${esc(T.type)}</th><th>${esc(T.healthL)}</th><th>${esc(T.openTodo)}</th><th>${esc(T.openFollow)}</th><th>${esc(T.lastLog)}</th></tr>
     ${C.map(c => { const s = summary(c); return `<tr><td><b class="mono">${esc(c.code)}</b> ${esc(cDesc(c))}</td><td>${esc(T.types[c.type])}</td>
-      <td>${esc(T.stages[c.type][c.stage])}</td><td>${healthChip(c.health)}</td>
+      <td>${healthChip(c.health)}</td>
       <td class="num">${s.todo}</td><td class="num">${s.follow}</td><td class="date">${s.lastLog || '—'}</td></tr>`; }).join('')}
   </table></div>`;
 }
@@ -582,12 +651,10 @@ function renderDetail() {
   return `
   <div class="card">
     <div class="detail-head">
-      <div class="title-row"><span class="code">${esc(c.code)}</span>
+      <div class="title-row">${state.canWrite ? `<button class="logo-btn" data-act="logo-pick" data-company="${esc(c.code)}" title="${esc(T.logoChange)}" aria-label="${esc(T.logoChange)}">${badge(c.code, 'lg')}</button>` : badge(c.code, 'lg')}
         <div style="min-width:0"><div class="cname">${esc(c.name)}</div><div class="sub">${esc(cDesc(c))}${c.industry ? ' · ' + esc(c.industry) : ''}</div></div></div>
       <div class="chips"><span class="tag">${esc(T.types[c.type])}</span>${healthChip(c.health)}</div>
     </div>
-    ${pipeline(c, true)}
-    ${state.canWrite ? `<div class="sub" style="margin-top:6px">${esc(T.stageHint)}</div>` : ''}
   </div>
   <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${view.tab === k}" class="${view.tab === k ? 'active' : ''}" data-act="tab" data-tab="${k}">${esc(v)}</button>`).join('')}</div>
   ${({ depts: tabDepts, info: tabInfo, tasks: tabTasks, logs: tabLogs, risks: tabRisks })[view.tab](c)}`;
@@ -730,6 +797,14 @@ function tabInfo(c) {
   const T = L(), d = ro();
   return `<div class="two">
     <div class="card"><h3>${esc(T.basic)}</h3>
+      <div class="logo-row">
+        ${badge(c.code, 'xl')}
+        <div class="logo-acts">
+          <div class="sub">${esc(T.logoHint)}</div>
+          ${state.canWrite ? `<div class="chips"><button class="small primary" data-act="logo-pick" data-company="${esc(c.code)}">${esc(c.logo ? T.logoChange : T.logoUpload)}</button>
+          ${c.logo ? `<button class="small" data-act="logo-del" data-company="${esc(c.code)}">${esc(T.logoRemove)}</button>` : ''}</div>` : ''}
+        </div>
+      </div>
       <label for="f-name">${esc(T.fullName)}</label><input id="f-name" data-field="name" value="${esc(c.name)}" ${d}>
       <label for="f-cn">${esc(T.descZh)}</label><input id="f-cn" data-field="cn" value="${esc(c.cn)}" ${d}>
       <label for="f-en">${esc(T.descEn)}</label><input id="f-en" data-field="en" value="${esc(c.en)}" ${d}>
@@ -799,8 +874,28 @@ function tabRisks(c) {
 }
 
 /* ===================== 渲染 ===================== */
+function themePanel() {
+  const T = L(), m = theme.mode;
+  const mb = (k, label) => `<button class="${m === k ? 'active' : ''}" data-act="theme-mode" data-mode="${k}" aria-pressed="${m === k}">${esc(label)}</button>`;
+  return `<div class="card theme-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">${esc(T.appearance)}</h3><button class="ghost" data-act="theme-toggle" aria-label="${esc(T.close)}">✕</button></div>
+    <div class="chips" style="margin-top:10px">${mb('auto', T.thAuto)}${mb('light', T.thLight)}${mb('dark', T.thDark)}${mb('custom', T.thCustom)}</div>
+    ${m === 'custom' ? `<div class="theme-custom">
+      <div><label>${esc(T.thBase)}</label><div class="chips">
+        <button class="small ${theme.base === 'light' ? 'active' : ''}" data-act="theme-base" data-base="light">${esc(T.thLight)}</button>
+        <button class="small ${theme.base === 'dark' ? 'active' : ''}" data-act="theme-base" data-base="dark">${esc(T.thDark)}</button></div></div>
+      <div><label for="th-accent">${esc(T.thAccent)}</label><div class="chips">
+        ${SWATCHES.map(sw => `<button class="swatch ${theme.accent === sw ? 'on' : ''}" style="background:${sw}" data-act="theme-swatch" data-color="${sw}" aria-label="${sw}"></button>`).join('')}
+        <input type="color" id="th-accent" data-theme-color="accent" value="${esc(theme.accent)}" aria-label="${esc(T.thAccent)}"></div></div>
+      <div><label for="th-bg">${esc(T.thBg)}</label><div class="chips">
+        <input type="color" id="th-bg" data-theme-color="bg" value="${esc(theme.bg || (theme.base === 'dark' ? '#121614' : '#f2f3f0'))}" aria-label="${esc(T.thBg)}">
+        <button class="small" data-act="theme-reset">${esc(T.thReset)}</button></div></div>
+    </div>` : ''}
+  </div>`;
+}
 function banners() {
   const T = L(), out = [];
+  if (ui.themeOpen) out.push(themePanel());
   if (state.mode === 'local') out.push(`<div class="banner warn">${esc(configured ? T.localMode : T.notConfigured)}</div>`);
   if (state.mode === 'db' && state.slow) out.push(`<div class="banner warn">${esc(T.slow)}</div>`);
   if (state.mode === 'db' && !state.canWrite) out.push(`<div class="banner">${esc(T.readOnly)}</div>`);
@@ -836,15 +931,16 @@ function render() {
   const snap = captureForm();
   const dueCount = state.tasks.filter(isDue).length;
   const sync = !navigator.onLine ? { cls: 'off', text: T.syncOffline } : pending.size ? { cls: 'pend', text: T.syncPending } : { cls: 'ok', text: T.syncOk };
-  const nb = (act, attrs, label, on) => `<button class="${on ? 'active' : ''}" data-act="${act}" ${attrs}>${label}</button>`;
+  const nb = (act, attrs, label, on) => `<button class="${on ? 'active' : ''}${attrs.includes('nav-co') ? ' nav-co' : ''}" data-act="${act}" ${attrs.replace(' class="nav-co"', '')}>${label}</button>`;
   document.getElementById('nav').innerHTML =
     nb('page', 'data-page="overview"', esc(T.overview) + (dueCount ? `<span class="badge">${dueCount}</span>` : ''), view.page === 'overview') +
     nb('page', 'data-page="tasks"', esc(T.mytasks), view.page === 'tasks') +
     nb('page', 'data-page="review"', esc(T.review), view.page === 'review') +
-    state.companies.map(c => nb('open', `data-id="${esc(c.code)}" title="${esc(c.name)}"`, esc(c.code), view.page === 'detail' && view.id === c.code)).join('') +
+    state.companies.map(c => nb('open', `data-id="${esc(c.code)}" title="${esc(c.name)}" class="nav-co"`, (c.logo ? badge(c.code, 'xs') : '') + esc(c.code), view.page === 'detail' && view.id === c.code)).join('') +
     (state.companies.length ? `<button data-act="export">${esc(T.exp)}</button>` : '') +
     (state.canWrite && state.mode !== 'loading' ? `<button data-act="import">${esc(T.imp)}</button>` : '') +
     `<button data-act="lang" aria-label="Language">${esc(T.langBtn)}</button>` +
+    `<button data-act="theme-toggle" class="${ui.themeOpen ? 'active' : ''}" aria-label="${esc(T.appearance)}" title="${esc(T.appearance)}">◐ ${esc(T.appearance)}</button>` +
     (state.mode === 'db' ? `<span class="sync ${sync.cls}" title="${esc(currentEmail())}">${esc(sync.text)}</span><button data-act="logout">${esc(T.logout)}</button>` : '');
   const app = document.getElementById('app');
   if (state.mode === 'loading') { app.innerHTML = banners() + `<div class="card empty">${esc(T.loading)}</div>`; return; }
@@ -874,6 +970,13 @@ document.addEventListener('click', e => {
   switch (act) {
     case 'page': view = { page: el.dataset.page, id: null, tab: 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
     case 'open': view = { page: 'detail', id: el.dataset.id, tab: DEPT_COMPANIES.includes(el.dataset.id) ? 'depts' : 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
+    case 'logo-pick': logoTarget = el.dataset.company; document.getElementById('logoFile').click(); return;
+    case 'logo-del': return mutate(el.dataset.company, c => { delete c.logo; c.logo = ''; });
+    case 'theme-toggle': ui.themeOpen = !ui.themeOpen; break;
+    case 'theme-mode': theme.mode = el.dataset.mode; saveTheme(); applyTheme(); break;
+    case 'theme-base': theme.base = el.dataset.base; saveTheme(); applyTheme(); break;
+    case 'theme-swatch': theme.accent = el.dataset.color; saveTheme(); applyTheme(); break;
+    case 'theme-reset': theme.accent = THEME_DEFAULT.accent; theme.bg = ''; saveTheme(); applyTheme(); break;
     case 'dept-preset': return addDept(el.dataset.company, el.dataset.name);
     case 'person-del': return mutate(el.dataset.company, c => { c.people = c.people.filter(n => n !== el.dataset.name); });
     case 'dept-move': return moveDept(el.dataset.did, Number(el.dataset.dir));
@@ -941,6 +1044,7 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('change', e => {
   const el = e.target;
+  if (el.dataset.themeColor) { theme[el.dataset.themeColor] = el.value; saveTheme(); applyTheme(); return render(); }
   if (el.dataset.ui) { ui[el.dataset.ui] = el.value; saveUi(); return render(); }
   if (el.dataset.ownerFilter) { const code = el.dataset.ownerFilter; if (el.value) deptOwner[code] = el.value; else delete deptOwner[code]; return render(); }
   if (el.dataset.dname) {
@@ -1127,6 +1231,13 @@ function startCloud() {
   ];
 }
 
+document.getElementById('logoFile')?.addEventListener('change', async e => {
+  const f = e.target.files[0], code = logoTarget;
+  e.target.value = ''; logoTarget = null;
+  if (!f || !code) return;
+  try { const data = await logoFromFile(f); mutate(code, c => { c.logo = data; }); }
+  catch { state.error = 'logoErr'; render(); }
+});
 function start() {
   render();
   if (!configured) return startLocal();

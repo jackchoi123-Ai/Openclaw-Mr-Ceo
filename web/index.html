@@ -112,11 +112,6 @@
   h2:first-child { margin-top: 4px; }
   h3 { font-size: 15px; margin: 0 0 10px; }
 
-  .pipeline { display: flex; gap: 3px; }
-  .pipeline span, .pipeline button { flex: 1; min-width: 0; text-align: center; font-size: 12px; padding: 4px 1px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    background: var(--bg); color: var(--muted); border: 1px solid transparent; }
-  .pipeline .done { background: var(--accent-soft); color: var(--accent); }
-  .pipeline .now { background: var(--accent); color: var(--accent-ink); font-weight: 500; }
 
   /* pinned follow-ups */
   .pin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
@@ -254,6 +249,25 @@
   .person-add input { font-size: 13px; padding: 4px 8px; }
   .dept-add input[name=owner] { flex: 1 1 140px; }
   .dtask-edit input[data-dtf=owner] { flex: 1 1 140px; }
+
+  /* logos */
+  .code.has-logo { background: #fff; border: 1px solid var(--line); overflow: hidden; padding: 2px; }
+  .code.has-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .code.xs { width: 18px; height: 18px; border-radius: 4px; font-size: 10px; padding: 1px; }
+  .code.lg { width: 44px; height: 44px; border-radius: 10px; font-size: 18px; }
+  .code.xl { width: 72px; height: 72px; border-radius: 14px; font-size: 28px; }
+  .nav-co { display: inline-flex; align-items: center; gap: 5px; }
+  .logo-btn { padding: 0; border: 0; background: transparent; border-radius: 10px; position: relative; flex: none; }
+  .logo-btn::after { content: "✎"; position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; line-height: 18px; text-align: center; }
+  .logo-row { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+  .logo-acts { display: grid; gap: 8px; min-width: 0; }
+  /* appearance */
+  .theme-panel { margin-bottom: 14px; }
+  .theme-custom { display: grid; gap: 4px; margin-top: 6px; }
+  .theme-custom label { margin: 8px 0 6px; }
+  .swatch { width: 28px; height: 28px; border-radius: 50%; padding: 0; border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line); }
+  .swatch.on { box-shadow: 0 0 0 2px var(--ink); }
+  input[type=color] { width: 44px; height: 30px; padding: 2px; border-radius: 8px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -263,6 +277,7 @@
 </div></header>
 <main id="app"><div class="card empty">正在载入… Loading…</div></main>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="logoFile" accept="image/*" hidden>
 <script type="module" src="app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
