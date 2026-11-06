@@ -8,6 +8,7 @@ Learn Business
 - [小规模 Interior Design Firm 的运作模式](docs/small-interior-design-firm-operations.md)
 - [小公司运作模式简报（PPT，11 页）](docs/small-interior-design-firm-operations.pptx)
 - [小型室内设计公司的商业模式](docs/small-firm-business-model.md)
+- [如何开始接单、如何接、如何成交](docs/small-firm-sales-playbook.md)
 
 ## 实用模板
 
