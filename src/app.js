@@ -48,6 +48,10 @@ const I18N = {
     moveL: '往前移', moveR: '往后移', delDept: '删除部门', expand: '展开 / 收起',
     sumOpen: '未完成', sumOverdue: '已逾期', sumDone: '已完成', deptTasks: '部门 task',
     dueLabel: '日期时间', levelLabel: '等级',
+    brand: 'GROUP OF COMPANIES', heroSub: n => `${n} 家公司 · 集团公司管理器`, navCompanies: '公司', navTasks: '任务', navReview: '周检视', navSettings: '设置',
+    settings: '设置', setAccount: '账号与同步', signedIn: '登录账号', setLang: '语言', setData: '数据备份',
+    expDesc: '把全部数据下载成一个备份文件', impDesc: '从备份文件恢复数据',
+    statDept: '部门 task 未完成', statHot: '优先 / 着急', statDue: '到期提醒', statPinned: '置顶跟进',
     appearance: '外观', thAuto: '跟随系统', thLight: '白天', thDark: '暗黑', thCustom: '自定义',
     thBase: '底色', thAccent: '主题色', thBg: '背景色', thReset: '恢复默认颜色',
     logoUpload: '上传 Logo', logoChange: '更换 Logo', logoRemove: '移除 Logo', logoHint: '支持 PNG、JPG、SVG 等图片，会自动缩小。',
@@ -108,6 +112,10 @@ const I18N = {
     moveL: 'Move earlier', moveR: 'Move later', delDept: 'Delete department', expand: 'Expand / collapse',
     sumOpen: 'Open', sumOverdue: 'Overdue', sumDone: 'Done', deptTasks: 'Department tasks',
     dueLabel: 'Date & time', levelLabel: 'Level',
+    brand: 'GROUP OF COMPANIES', heroSub: n => `${n} companies · group company manager`, navCompanies: 'Companies', navTasks: 'Tasks', navReview: 'Review', navSettings: 'Settings',
+    settings: 'Settings', setAccount: 'Account & sync', signedIn: 'Signed in as', setLang: 'Language', setData: 'Backup',
+    expDesc: 'Download all data as one backup file', impDesc: 'Restore data from a backup file',
+    statDept: 'Open department tasks', statHot: 'Priority / urgent', statDue: 'Reminders due', statPinned: 'Pinned follow-ups',
     appearance: 'Appearance', thAuto: 'System', thLight: 'Light', thDark: 'Dark', thCustom: 'Custom',
     thBase: 'Base', thAccent: 'Accent colour', thBg: 'Background', thReset: 'Reset colours',
     logoUpload: 'Upload logo', logoChange: 'Change logo', logoRemove: 'Remove logo', logoHint: 'PNG, JPG, SVG and other images work; they are shrunk automatically.',
@@ -128,15 +136,16 @@ try { lang = localStorage.getItem('cm-lang') === 'en' ? 'en' : 'zh'; } catch {}
 const L = () => I18N[lang];
 
 /* ---------- appearance: auto / light / dark / custom (per device) ---------- */
-const THEME_DEFAULT = { mode: 'auto', base: 'light', accent: '#24548f', bg: '' };
-const SWATCHES = ['#24548f', '#0f766e', '#15803d', '#b45309', '#c2410c', '#be123c', '#7c3aed', '#334155'];
+const THEME_DEFAULT = { mode: 'auto', base: 'light', accent: '#0284c7', bg: '' };
+const SWATCHES = ['#0284c7', '#0ea5e9', '#0f766e', '#15803d', '#b45309', '#be123c', '#7c3aed', '#334155'];
 let theme = { ...THEME_DEFAULT };
 try { Object.assign(theme, JSON.parse(localStorage.getItem('cm-theme') || '{}')); } catch {}
+if (theme.accent === '#24548f') theme.accent = THEME_DEFAULT.accent;   // old default → new sky default
 const saveTheme = () => { try { localStorage.setItem('cm-theme', JSON.stringify(theme)); } catch {} };
 const hexOk = h => /^#[0-9a-f]{6}$/i.test(h || '');
 function applyTheme() {
   const r = document.documentElement, st = r.style;
-  ['--accent', '--accent-soft', '--accent-ink', '--bg', '--panel', '--line'].forEach(v => st.removeProperty(v));
+  ['--accent', '--accent-soft', '--accent-ink', '--accent-deep', '--sky', '--hero-a', '--hero-b', '--bg', '--panel', '--field', '--line'].forEach(v => st.removeProperty(v));
   const base = theme.mode === 'custom' ? theme.base : theme.mode;
   if (base === 'light' || base === 'dark') r.setAttribute('data-theme', base); else r.removeAttribute('data-theme');
   if (theme.mode === 'custom') {
@@ -147,11 +156,16 @@ function applyTheme() {
       const n = parseInt(a.slice(1), 16), lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
       st.setProperty('--accent', dark ? `color-mix(in srgb, ${a} 70%, white)` : a);
       st.setProperty('--accent-ink', (dark ? lum > 0.35 : lum > 0.62) ? '#10141a' : '#ffffff');
-      st.setProperty('--accent-soft', `color-mix(in srgb, ${a} ${dark ? 22 : 12}%, ${dark ? '#1b201e' : '#ffffff'})`);
+      st.setProperty('--accent-soft', `color-mix(in srgb, ${a} ${dark ? 22 : 12}%, ${dark ? '#0f1e2b' : '#ffffff'})`);
+      st.setProperty('--accent-deep', dark ? `color-mix(in srgb, ${a} 55%, white)` : `color-mix(in srgb, ${a} 70%, black)`);
+      st.setProperty('--sky', `color-mix(in srgb, ${a} 65%, white)`);
+      st.setProperty('--hero-a', dark ? `color-mix(in srgb, ${a} 45%, #08131d)` : `color-mix(in srgb, ${a} 70%, white)`);
+      st.setProperty('--hero-b', dark ? `color-mix(in srgb, ${a} 25%, #04090e)` : `color-mix(in srgb, ${a} 80%, black)`);
     }
     if (hexOk(theme.bg)) {
       st.setProperty('--bg', theme.bg);
       st.setProperty('--panel', dark ? `color-mix(in srgb, ${theme.bg} 88%, white)` : `color-mix(in srgb, ${theme.bg} 25%, white)`);
+      st.setProperty('--field', dark ? `color-mix(in srgb, ${theme.bg} 94%, white)` : `color-mix(in srgb, ${theme.bg} 70%, white)`);
       st.setProperty('--line', dark ? `color-mix(in srgb, ${theme.bg} 78%, white)` : `color-mix(in srgb, ${theme.bg} 85%, black)`);
     }
   }
@@ -557,7 +571,21 @@ function renderOverview() {
   if (!state.companies.length && !state.tasks.length) return `<div class="card"><h3>${esc(T.noCompanies)}</h3><div class="sub">${esc(T.noCompaniesSub)}</div></div>`;
   const due = state.tasks.filter(isDue).sort((a, b) => a.remind.localeCompare(b.remind));
   const pinned = sortTasks(state.tasks.filter(t => t.pinned && !t.done));
+  const ds = state.companies.reduce((acc, c) => { const x = deptStats(c.code); acc.open += x.open; acc.hot += x.byLevel.priority + x.byLevel.urgent; return acc; }, { open: 0, hot: 0 });
+  const dateLine = new Date().toLocaleDateString(lang === 'en' ? 'en-GB' : 'zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const stat = (n, label, act, alert) => `<button class="hero-stat ${alert && n ? 'alert' : ''}" ${act}><b>${n}</b><span>${esc(label)}</span></button>`;
   return `
+  <section class="hero">
+    <div class="hero-eyebrow">${esc(dateLine)}</div>
+    <h1 class="hero-title">${esc(T.brand)}</h1>
+    <div class="hero-sub">${esc(T.heroSub(state.companies.length))}</div>
+    <div class="hero-stats">
+      ${stat(ds.open, T.statDept, 'data-act="page" data-page="companies"')}
+      ${stat(ds.hot, T.statHot, 'data-act="page" data-page="companies"', true)}
+      ${stat(due.length, T.statDue, 'data-act="page" data-page="review"', true)}
+      ${stat(pinned.length, T.statPinned, 'data-act="page" data-page="tasks"')}
+    </div>
+  </section>
   ${due.length ? `<h2>${SVG_BELL.replace('width="12" height="12"', 'width="16" height="16"')} ${esc(T.dueReminders)} <span class="badge">${due.length}</span></h2>
     <div class="card">${due.map(t => `<div class="list-item">
       ${t.company ? badge(t.company, 'sm') : ''}
@@ -569,10 +597,15 @@ function renderOverview() {
   <h2>${SVG_PIN(true).replace('<svg ', '<svg width="16" height="16" style="color:var(--accent)" ')} ${esc(T.pinned)}</h2>
   ${pinned.length ? `<div class="pin-grid">${pinned.map(pinCard).join('')}</div>` : `<div class="card empty">${esc(T.pinnedEmpty)}</div>`}
 
-  <h2>${esc(T.companies)}</h2>
-  <div class="grid">${state.companies.map(c => { const s = summary(c); return `
+  <h2>${esc(T.companies)} <span class="count">${state.companies.length}</span></h2>
+  ${companyGrid()}`;
+}
+
+function companyGrid() {
+  const T = L();
+  return `<div class="grid">${state.companies.map(c => { const s = summary(c); return `
     <div class="card company-card h-${c.health}" data-act="open" data-id="${esc(c.code)}" tabindex="0" role="button" aria-label="${esc(c.name)}">
-      <div class="title-row">${badge(c.code)}
+      <div class="title-row">${badge(c.code, 'lg')}
         <div style="min-width:0"><div class="cname">${esc(c.name)}</div><div class="sub">${esc(cDesc(c))}</div></div></div>
       <div class="chips"><span class="tag">${esc(T.types[c.type])}</span>${healthChip(c.health)}${s.due ? `<span class="tag due">${SVG_BELL} ${s.due}</span>` : ''}</div>
       <div class="stats">
@@ -649,6 +682,7 @@ function renderDetail() {
   Object.assign(tabs, { info: T.tabInfo, tasks: `${T.tabTasks} ${s.todo + s.follow}`, logs: `${T.tabLogs} ${c.logs.length}`, risks: `${T.tabRisks} ${s.risks}` });
   if (!tabs[view.tab]) view.tab = Object.keys(tabs)[0];
   return `
+  <div class="switcher" role="tablist" aria-label="${esc(T.companies)}">${state.companies.map(x => `<button role="tab" aria-selected="${x.code === c.code}" class="${x.code === c.code ? 'active' : ''}" data-act="open" data-id="${esc(x.code)}" title="${esc(x.name)}">${badge(x.code)}${esc(x.name.replace(/\s+(M\s+)?Sdn\.?\s*Bhd\.?$/i, ''))}</button>`).join('')}</div>
   <div class="card">
     <div class="detail-head">
       <div class="title-row">${state.canWrite ? `<button class="logo-btn" data-act="logo-pick" data-company="${esc(c.code)}" title="${esc(T.logoChange)}" aria-label="${esc(T.logoChange)}">${badge(c.code, 'lg')}</button>` : badge(c.code, 'lg')}
@@ -877,9 +911,9 @@ function tabRisks(c) {
 function themePanel() {
   const T = L(), m = theme.mode;
   const mb = (k, label) => `<button class="${m === k ? 'active' : ''}" data-act="theme-mode" data-mode="${k}" aria-pressed="${m === k}">${esc(label)}</button>`;
-  return `<div class="card theme-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">${esc(T.appearance)}</h3><button class="ghost" data-act="theme-toggle" aria-label="${esc(T.close)}">✕</button></div>
-    <div class="chips" style="margin-top:10px">${mb('auto', T.thAuto)}${mb('light', T.thLight)}${mb('dark', T.thDark)}${mb('custom', T.thCustom)}</div>
+  return `<section class="card">
+    <h3>${esc(T.appearance)}</h3>
+    <div class="seg">${mb('auto', T.thAuto)}${mb('light', T.thLight)}${mb('dark', T.thDark)}${mb('custom', T.thCustom)}</div>
     ${m === 'custom' ? `<div class="theme-custom">
       <div><label>${esc(T.thBase)}</label><div class="chips">
         <button class="small ${theme.base === 'light' ? 'active' : ''}" data-act="theme-base" data-base="light">${esc(T.thLight)}</button>
@@ -888,14 +922,38 @@ function themePanel() {
         ${SWATCHES.map(sw => `<button class="swatch ${theme.accent === sw ? 'on' : ''}" style="background:${sw}" data-act="theme-swatch" data-color="${sw}" aria-label="${sw}"></button>`).join('')}
         <input type="color" id="th-accent" data-theme-color="accent" value="${esc(theme.accent)}" aria-label="${esc(T.thAccent)}"></div></div>
       <div><label for="th-bg">${esc(T.thBg)}</label><div class="chips">
-        <input type="color" id="th-bg" data-theme-color="bg" value="${esc(theme.bg || (theme.base === 'dark' ? '#121614' : '#f2f3f0'))}" aria-label="${esc(T.thBg)}">
+        <input type="color" id="th-bg" data-theme-color="bg" value="${esc(theme.bg || (theme.base === 'dark' ? '#08131d' : '#f3f8fc'))}" aria-label="${esc(T.thBg)}">
         <button class="small" data-act="theme-reset">${esc(T.thReset)}</button></div></div>
     </div>` : ''}
+  </section>`;
+}
+
+/* ===================== 页面：设置 ===================== */
+function renderSettings() {
+  const T = L();
+  const seg = (act, attr, cur, opts) => `<div class="seg">${opts.map(([k, label]) => `<button class="${cur === k ? 'active' : ''}" data-act="${act}" ${attr}="${k}" aria-pressed="${cur === k}">${esc(label)}</button>`).join('')}</div>`;
+  return `<h2>${esc(T.settings)}</h2>
+  <div class="settings">
+    ${state.mode === 'db' ? `<section class="card"><h3>${esc(T.setAccount)}</h3>
+      <div class="set-row"><div><div class="sub">${esc(T.signedIn)}</div><div class="lbl">${esc(currentEmail())}</div></div>${syncPill(true)}</div>
+      <div class="set-row"><span></span><button data-act="logout">${esc(T.logout)}</button></div>
+    </section>` : ''}
+    <section class="card"><h3>${esc(T.setLang)}</h3>${seg('lang-set', 'data-l', lang, [['zh', '中文'], ['en', 'English']])}</section>
+    ${themePanel()}
+    <section class="card"><h3>${esc(T.setData)}</h3>
+      <div class="set-row"><span class="sub">${esc(T.expDesc)}</span><button data-act="export" ${state.companies.length ? '' : 'disabled'}>${esc(T.exp)}</button></div>
+      ${state.canWrite ? `<div class="set-row"><span class="sub">${esc(T.impDesc)}</span><button data-act="import">${esc(T.imp)}</button></div>` : ''}
+    </section>
   </div>`;
+}
+
+/* ===================== 页面：公司 ===================== */
+function renderCompanies() {
+  const T = L();
+  return `<h2>${esc(T.companies)} <span class="count">${state.companies.length}</span></h2>${companyGrid()}`;
 }
 function banners() {
   const T = L(), out = [];
-  if (ui.themeOpen) out.push(themePanel());
   if (state.mode === 'local') out.push(`<div class="banner warn">${esc(configured ? T.localMode : T.notConfigured)}</div>`);
   if (state.mode === 'db' && state.slow) out.push(`<div class="banner warn">${esc(T.slow)}</div>`);
   if (state.mode === 'db' && !state.canWrite) out.push(`<div class="banner">${esc(T.readOnly)}</div>`);
@@ -918,6 +976,18 @@ function restoreForm(snap) {
   }
 }
 
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+  tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>',
+  review: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  companies: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V8l6-3v16"/><path d="M11 21V3l8 4v14"/><path d="M14 10h2M14 14h2M7.5 12h1M7.5 16h1"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+};
+function syncPill(long) {
+  const T = L();
+  const sync = !navigator.onLine ? { cls: 'off', text: T.syncOffline } : pending.size ? { cls: 'pend', text: T.syncPending } : { cls: 'ok', text: T.syncOk };
+  return `<span class="sync ${sync.cls}" role="status" title="${esc(sync.text)}"><span class="sync-text">${esc(long || sync.cls !== 'off' ? sync.text : T.syncOffline.split(' · ')[0])}</span></span>`;
+}
 let composing = false, renderWanted = false;
 document.addEventListener('compositionstart', () => { composing = true; });
 document.addEventListener('compositionend', () => { composing = false; if (renderWanted) { renderWanted = false; render(); } });
@@ -926,27 +996,30 @@ function render() {
   if (composing) { renderWanted = true; return; }
   const T = L();
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-CN';
-  document.title = T.app;
-  document.getElementById('appTitle').textContent = T.app;
+  document.title = 'Group of Companies';
   const snap = captureForm();
   const dueCount = state.tasks.filter(isDue).length;
-  const sync = !navigator.onLine ? { cls: 'off', text: T.syncOffline } : pending.size ? { cls: 'pend', text: T.syncPending } : { cls: 'ok', text: T.syncOk };
-  const nb = (act, attrs, label, on) => `<button class="${on ? 'active' : ''}${attrs.includes('nav-co') ? ' nav-co' : ''}" data-act="${act}" ${attrs.replace(' class="nav-co"', '')}>${label}</button>`;
-  document.getElementById('nav').innerHTML =
-    nb('page', 'data-page="overview"', esc(T.overview) + (dueCount ? `<span class="badge">${dueCount}</span>` : ''), view.page === 'overview') +
-    nb('page', 'data-page="tasks"', esc(T.mytasks), view.page === 'tasks') +
-    nb('page', 'data-page="review"', esc(T.review), view.page === 'review') +
-    state.companies.map(c => nb('open', `data-id="${esc(c.code)}" title="${esc(c.name)}" class="nav-co"`, (c.logo ? badge(c.code, 'xs') : '') + esc(c.code), view.page === 'detail' && view.id === c.code)).join('') +
-    (state.companies.length ? `<button data-act="export">${esc(T.exp)}</button>` : '') +
-    (state.canWrite && state.mode !== 'loading' ? `<button data-act="import">${esc(T.imp)}</button>` : '') +
-    `<button data-act="lang" aria-label="Language">${esc(T.langBtn)}</button>` +
-    `<button data-act="theme-toggle" class="${ui.themeOpen ? 'active' : ''}" aria-label="${esc(T.appearance)}" title="${esc(T.appearance)}">◐ ${esc(T.appearance)}</button>` +
-    (state.mode === 'db' ? `<span class="sync ${sync.cls}" title="${esc(currentEmail())}">${esc(sync.text)}</span><button data-act="logout">${esc(T.logout)}</button>` : '');
+  const active = k => view.page === k || (k === 'companies' && view.page === 'detail');
+  const items = [
+    ['overview', T.overview, ICON.home, dueCount],
+    ['tasks', T.navTasks, ICON.tasks, 0],
+    ['review', T.navReview, ICON.review, 0],
+    ['companies', T.navCompanies, ICON.companies, 0],
+    ['settings', T.navSettings, ICON.settings, 0],
+  ];
+  const signedIn = !['login', 'denied', 'loading'].includes(state.mode);
+  document.getElementById('nav').innerHTML = signedIn ? items.slice(0, 4).map(([k, label, , n]) =>
+    `<button class="${active(k) ? 'active' : ''}" data-act="page" data-page="${k}" ${active(k) ? 'aria-current="page"' : ''}>${esc(k === 'tasks' ? T.mytasks : label)}${n ? `<span class="badge">${n}</span>` : ''}</button>`).join('') : '';
+  document.getElementById('tabbar').innerHTML = signedIn ? items.map(([k, label, icon, n]) =>
+    `<button class="${active(k) ? 'active' : ''}" data-act="page" data-page="${k}" ${active(k) ? 'aria-current="page"' : ''}>${icon}<span>${esc(label)}</span>${n ? `<span class="badge">${n}</span>` : ''}</button>`).join('') : '';
+  document.getElementById('barRight').innerHTML = signedIn
+    ? (state.mode === 'db' ? syncPill() : '') + `<button class="icon-round settings ${view.page === 'settings' ? 'active' : ''}" data-act="page" data-page="settings" aria-label="${esc(T.settings)}" title="${esc(T.settings)}">${ICON.settings}</button>`
+    : `<button class="small" data-act="lang">${esc(T.langBtn)}</button>`;
   const app = document.getElementById('app');
   if (state.mode === 'loading') { app.innerHTML = banners() + `<div class="card empty">${esc(T.loading)}</div>`; return; }
   if (state.mode === 'login') { app.innerHTML = loginView(); restoreForm(snap); return; }
-  if (state.mode === 'denied') { app.innerHTML = `<div class="card login"><p>${esc(T.noAccess)}</p><p class="sub">${esc(currentEmail())}</p><button data-act="logout">${esc(T.logout)}</button></div>`; return; }
-  const page = { overview: renderOverview, tasks: renderTasks, review: renderReview, detail: renderDetail }[view.page] || renderOverview;
+  if (state.mode === 'denied') { app.innerHTML = `<div class="card login-wrap"><p>${esc(T.noAccess)}</p><p class="sub">${esc(currentEmail())}</p><button data-act="logout">${esc(T.logout)}</button></div>`; return; }
+  const page = { overview: renderOverview, tasks: renderTasks, review: renderReview, detail: renderDetail, companies: renderCompanies, settings: renderSettings }[view.page] || renderOverview;
   app.innerHTML = banners() + page() + `<div class="foot">${esc(state.mode === 'db' ? T.footDb : T.footLocal)}</div>`
     + state.companies.map(c => peopleList('people-' + c.code, peopleOf(c.code))).join('') + peopleList('people-all', allPeople());
   restoreForm(snap);
@@ -972,7 +1045,8 @@ document.addEventListener('click', e => {
     case 'open': view = { page: 'detail', id: el.dataset.id, tab: DEPT_COMPANIES.includes(el.dataset.id) ? 'depts' : 'info' }; ui.openTask = null; window.scrollTo(0, 0); break;
     case 'logo-pick': logoTarget = el.dataset.company; document.getElementById('logoFile').click(); return;
     case 'logo-del': return mutate(el.dataset.company, c => { delete c.logo; c.logo = ''; });
-    case 'theme-toggle': ui.themeOpen = !ui.themeOpen; break;
+    case 'theme-toggle': view = { page: 'settings', id: null, tab: 'info' }; break;
+    case 'lang-set': lang = el.dataset.l === 'en' ? 'en' : 'zh'; try { localStorage.setItem('cm-lang', lang); } catch {} break;
     case 'theme-mode': theme.mode = el.dataset.mode; saveTheme(); applyTheme(); break;
     case 'theme-base': theme.base = el.dataset.base; saveTheme(); applyTheme(); break;
     case 'theme-swatch': theme.accent = el.dataset.color; saveTheme(); applyTheme(); break;
@@ -1157,7 +1231,7 @@ function startLocal() {
 const loginUi = { busy: false, msg: '', err: false };
 function loginView() {
   const T = L();
-  return `<div class="card login">
+  return `<div class="login-wrap"><section class="hero"><div class="hero-eyebrow">${esc(T.app)}</div><h1 class="hero-title">${esc(T.brand)}</h1></section><div class="card">
     <h3>${esc(T.loginTitle)}</h3>
     <form id="login-form">
       <label for="login-email">${esc(T.email)}</label><input type="email" name="email" id="login-email" autocomplete="username" required>
@@ -1169,7 +1243,7 @@ function loginView() {
       </div>
     </form>
     <p class="sub" style="margin-top:14px">${esc(T.installHint)}</p>
-  </div>`;
+  </div></div>`;
 }
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'login-form') return;
