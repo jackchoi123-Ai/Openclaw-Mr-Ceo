@@ -1,16 +1,29 @@
 {
-  "name": "集团公司管理器 Group Company Manager",
-  "short_name": "公司管理器",
-  "description": "跟进集团各公司的部门任务、长期跟进事项、进展和风险。",
+  "name": "Group of Companies",
+  "short_name": "Group of Companies",
+  "description": "GROUP OF COMPANIES：跟进集团各公司的部门任务、长期跟进事项、进展和风险。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f2f3f0",
-  "theme_color": "#24548f",
+  "background_color": "#f3f8fc",
+  "theme_color": "#0284c7",
   "lang": "zh-CN",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
